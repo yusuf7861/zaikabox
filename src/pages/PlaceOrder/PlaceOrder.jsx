@@ -1,5 +1,7 @@
-import React, {useState} from 'react';
+import React, {useContext, useState} from 'react';
 import {assets} from "../../assets/assets.js";
+import {StoreContext} from "../../context/StoreContext.jsx";
+import {calculateCartTotal} from "../../util/cartUtils.js";
 
 
 const PlaceOrder = () => {
@@ -15,13 +17,22 @@ const PlaceOrder = () => {
         setValidated(true);
     };
 
+    const {foodList, quantities} = useContext(StoreContext);
+    // cart items
+    const cartItems = foodList.filter(food => quantities[food.id] > 0);
+
+    //calculating
+    const {subtotal, shipping, tax, total } = calculateCartTotal(
+        cartItems, quantities
+    );
+
     return (
         <div id="checkout-form">
             <div className="container py-2">
                 <div className="py-2 text-center">
-                    <img className="d-block mx-auto mb-4"
-                         src={assets.logo} alt="company_logo" width="72"
-                         height="72"/>
+                    <img className="d-block mx-auto mb-1"
+                         src={assets.payment} alt="image" width="98"
+                         height="98"/>
                 </div>
 
                 <form
@@ -96,46 +107,50 @@ const PlaceOrder = () => {
                         <div className="col-12 col-md-5">
                             <div className="bg-light rounded p-4 shadow-sm h-100">
                                 <h4 className="mb-3">Payment Summary</h4>
+
+                                <h6 className="fw-semibold mb-3">Items in Cart</h6>
+                                {foodList.filter(food => quantities[food.id] > 0).map(food => (
+                                    <div
+                                        key={food.id}
+                                        className="d-flex justify-content-between align-items-start mb-2 p-2 rounded shadow-sm"
+                                        style={{ borderLeft: '5px solid #0d6efd', backgroundColor: '#f8f9fa' }}
+                                    >
+                                        <div>
+                                            <div className="fw-bold text-dark" style={{ fontSize: '1rem' }}>{food.name}</div>
+                                            <div className="text-primary small mt-1">Qty: {quantities[food.id]}</div>
+                                        </div>
+                                        <div className="fw-bold text-success" style={{ fontSize: '1rem' }}>
+                                            ₹ {(food.price * quantities[food.id]).toFixed(2)}
+                                        </div>
+                                    </div>
+                                ))}
+
                                 <div className="mb-3">
                                     <div className="d-flex justify-content-between">
                                         <span className="text-muted">Subtotal</span>
-                                        <span>$37.96</span>
+                                        <span>{subtotal.toFixed(2)}</span>
                                     </div>
                                     <div className="d-flex justify-content-between">
                                         <span className="text-muted">Delivery Fee</span>
-                                        <span>$3.99</span>
+                                        <span>₹{shipping.toFixed(2)}</span>
                                     </div>
                                     <div className="d-flex justify-content-between">
-                                        <span className="text-muted">Tax</span>
-                                        <span>$3.42</span>
+                                        <span className="text-muted">Tax(10%)</span>
+                                        <span>₹{tax.toFixed(2)}</span>
                                     </div>
                                     <div className="d-flex justify-content-between fw-bold border-top pt-2 mt-2">
                                         <span>Total</span>
-                                        <span>$45.37</span>
+                                        <span>₹{total.toFixed(2)}</span>
                                     </div>
                                 </div>
 
                                 <h6 className="fw-semibold mb-2">Payment Method</h6>
+
+
+
                                 <div className="row g-2 mb-3">
                                     <div className="col-3">
-                                        <button className="btn btn-outline-secondary w-100 py-2" type="button">
-                                            <i className="fa-brands fa-cc-visa fa-lg"></i>
-                                        </button>
-                                    </div>
-                                    <div className="col-3">
-                                        <button className="btn btn-outline-secondary w-100 py-2" type="button">
-                                            <i className="fa-brands fa-cc-mastercard fa-lg"></i>
-                                        </button>
-                                    </div>
-                                    <div className="col-3">
-                                        <button className="btn btn-outline-secondary w-100 py-2" type="button">
-                                            <i className="fa-brands fa-cc-amex fa-lg"></i>
-                                        </button>
-                                    </div>
-                                    <div className="col-3">
-                                        <button className="btn btn-outline-secondary w-100 py-2" type="button">
-                                            <i className="fa-brands fa-paypal fa-lg"></i>
-                                        </button>
+                                        <img src={assets.razorPay} alt="Razorpay" width={100} height={30} />
                                     </div>
                                 </div>
 

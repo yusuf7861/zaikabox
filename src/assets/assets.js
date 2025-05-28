@@ -1,9 +1,15 @@
 import logo from './logo.png'
 import cart from './cart.png'
+import razorPay from './razorpay.svg'
+import contact from './contact-us.svg'
+import payment from './payment.svg'
 
 export const assets = {
     logo,
-    cart
+    cart,
+    razorPay,
+    contact,
+    payment
 }
 
 export const categories = [
@@ -15,3 +21,4 @@ export const categories = [
     {  category: 'Rolls', icon: 'https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto/PC_Mweb/Rolls.png' },
     {  category: 'Salad', icon: 'https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto/PC_Mweb/Salad.png' },
 ];
+

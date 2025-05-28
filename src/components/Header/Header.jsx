@@ -14,8 +14,8 @@ const Header = () => {
             <Hero  />
             <ExploreMenu category={category} setCategory={setCategory} />
             <FoodDisplay category={category} searchText={''} />
-            <HowItWorks />
-            <Footer />
+            {/*<HowItWorks />*/}
+            {/*<Footer />*/}
         </div>
     );
 };

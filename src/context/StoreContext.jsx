@@ -1,5 +1,4 @@
 import { createContext, useEffect, useState } from "react";
-import axios from "axios";
 import {fetchFoodList} from "../service/foodService.js";
 
 export const StoreContext = createContext(null);

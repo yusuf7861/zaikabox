@@ -1,9 +1,13 @@
-import React, {useEffect, useState} from 'react';
+import React, {useContext, useEffect, useState} from 'react';
 import {useParams} from "react-router-dom";
 import {fetchFoodDetails} from "../../service/foodService.js";
 import {toast} from "react-toastify";
+import {StoreContext} from "../../context/StoreContext.jsx";
 
 const FoodDetail = () => {
+
+    const { addQuantity, quantities } = useContext(StoreContext);
+    
     const {id} = useParams();
 
     const [data, setData] = useState({});
@@ -19,6 +23,8 @@ const FoodDetail = () => {
         }
         loadFoodDetails();
     }, [id]);
+
+
     return (
         <section className="py-2">
             <div className="container px-2 px-lg-5 my-5">
@@ -34,12 +40,17 @@ const FoodDetail = () => {
                             <span>₹ {data.price}</span>
                         </div>
                         <p className="lead">{data.description}</p>
-                        <div className="d-flex">
-                            <button className="btn btn-outline-dark flex-shrink-0" type="button">
-                                <i className="bi-cart-fill me-1"></i>
+                        {quantities[id] > 0 ? (
+                            <button className="btn btn-success flex-shrink-0" disabled>
+                                <i className="bi bi-check-circle me-1"></i>
+                                Added to cart
+                            </button>
+                        ) : (
+                            <button className="btn btn-outline-dark flex-shrink-0" onClick={() => addQuantity(id)}>
+                                <i className="bi bi-cart-fill me-1"></i>
                                 Add to cart
                             </button>
-                        </div>
+                        )}
                     </div>
                 </div>
             </div>

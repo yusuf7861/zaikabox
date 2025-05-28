@@ -1,4 +1,7 @@
-import React, {useState} from 'react';
+import axios from 'axios';
+import { useState } from 'react';
+import { toast } from 'react-toastify';
+import { assets } from "../../assets/assets.js";
 // import './contact.css'
 
 const Contact = () => {
@@ -10,6 +13,9 @@ const Contact = () => {
     });
 
     const [submitted, setSubmitted] = useState(false);
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
+    
 
     const handleChange = (e) => {
         setFormData(prev => ({
@@ -18,7 +24,7 @@ const Contact = () => {
         }));
     };
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
 
         // Simple validation
@@ -27,83 +33,123 @@ const Contact = () => {
             return;
         }
 
-        console.log("Form submitted:", formData);
-        setSubmitted(true);
+        setLoading(true);
+        setError(null);
+        setSubmitted(false);
 
-        // Optionally send formData to backend API here
+        try {
+            const response = await axios.post("http://localhost:8080/contact-us", formData);
 
-        // Clear form
-        setFormData({
-            name: "",
-            email: "",
-            subject: "",
-            message: ""
-        });
+            // Clear form
+            setFormData({
+                name: "",
+                email: "",
+                subject: "",
+                message: ""
+            });
+
+            if (response.status === 200) {
+                setLoading(false);
+                setSubmitted(true);
+                toast.success("Request sent successfully");
+            } else {
+                toast.error("Something went wrong!");
+            }
+        } catch (err) {
+            console.error("Error submitting form:", err);
+            setError(err.response?.data?.message || "Failed to send message. Please try again later.");
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <div className="container py-5">
-            <h2 className="mb-4">Contact Us</h2>
+        <div className="container py-2">
             {submitted && (
                 <div className="alert alert-success" role="alert">
                     Thank you! Your message has been sent.
                 </div>
             )}
 
-            <form onSubmit={handleSubmit} className="bg-light p-4 rounded shadow-sm">
-                <div className="mb-3">
-                    <label className="form-label">Name</label>
-                    <input
-                        type="text"
-                        name="name"
-                        className="form-control"
-                        value={formData.name}
-                        onChange={handleChange}
-                        placeholder="Your name"
+            {error && (
+                <div className="alert alert-danger" role="alert">
+                    {error}
+                </div>
+            )}
+
+            <div className="row align-items-center g-2">
+                {/* Left Side: SVG or Illustration */}
+                <div className="col-12 col-md-6 text-center">
+                    <img
+                        src={assets.contact}
+                        alt="Contact Illustration"
+                        className="img-fluid"
+                        style={{ maxHeight: '400px' }}
                     />
                 </div>
 
-                <div className="mb-3">
-                    <label className="form-label">Email</label>
-                    <input
-                        type="email"
-                        name="email"
-                        className="form-control"
-                        value={formData.email}
-                        onChange={handleChange}
-                        placeholder="you@example.com"
-                    />
-                </div>
+                {/* Right Side: Form */}
+                <div className="col-12 col-md-6">
+                    <form onSubmit={handleSubmit} className="bg-light p-4 rounded shadow-sm">
+                        <div className="mb-3">
+                            <label className="form-label">Name</label>
+                            <input
+                                type="text"
+                                name="name"
+                                className="form-control"
+                                value={formData.name}
+                                onChange={handleChange}
+                                placeholder="Your name"
+                                required
+                            />
+                        </div>
 
-                <div className="mb-3">
-                    <label className="form-label">Subject</label>
-                    <input
-                        type="text"
-                        name="subject"
-                        className="form-control"
-                        value={formData.subject}
-                        onChange={handleChange}
-                        placeholder="Subject"
-                    />
-                </div>
+                        <div className="mb-3">
+                            <label className="form-label">Email</label>
+                            <input
+                                type="email"
+                                name="email"
+                                className="form-control"
+                                value={formData.email}
+                                onChange={handleChange}
+                                placeholder="you@example.com"
+                                required
+                            />
+                        </div>
 
-                <div className="mb-3">
-                    <label className="form-label">Message</label>
-                    <textarea
-                        name="message"
-                        className="form-control"
-                        rows="5"
-                        value={formData.message}
-                        onChange={handleChange}
-                        placeholder="Write your message here..."
-                    ></textarea>
-                </div>
+                        <div className="mb-3">
+                            <label className="form-label">Subject</label>
+                            <input
+                                type="text"
+                                name="subject"
+                                className="form-control"
+                                value={formData.subject}
+                                onChange={handleChange}
+                                placeholder="Subject"
+                                required
+                            />
+                        </div>
 
-                <button type="submit" className="btn btn-primary">
-                    Send Message
-                </button>
-            </form>
+                        <div className="mb-3">
+                            <label className="form-label">Message</label>
+                            <textarea
+                                name="message"
+                                className="form-control"
+                                rows="5"
+                                value={formData.message}
+                                onChange={handleChange}
+                                placeholder="Write your message here..."
+                                required
+                            ></textarea>
+                        </div>
+
+                        <button type="submit" className="btn btn-primary w-100" disabled={loading}> {loading ? 'Sending...' : "Send Message"}
+                        </button>
+                    </form>
+                </div>
+            </div>
         </div>
+
     );
 };
 

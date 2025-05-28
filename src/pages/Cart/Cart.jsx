@@ -1,6 +1,7 @@
 import React, {useContext} from "react"
 import {StoreContext} from "../../context/StoreContext.jsx";
 import {Link, useNavigate} from "react-router-dom";
+import {calculateCartTotal} from "../../util/cartUtils.js";
 
 export const Cart = () => {
 
@@ -11,11 +12,9 @@ export const Cart = () => {
     const cartItems = foodList.filter(food => quantities[food.id] > 0);
 
     //calculate total price
-    const subtotal = cartItems.reduce((acc, food) => acc + food.price * quantities[food.id], 0);
-    const shipping = subtotal === 0 ? 0.0 : 10;
-    const tax = subtotal * 0.1;
-
-    const total = subtotal + shipping + tax;
+    const {subtotal, shipping, tax, total} = calculateCartTotal(
+        cartItems, quantities
+    );
 
     return (
         <div id="container">
@@ -124,7 +123,7 @@ export const Cart = () => {
                             <ul className="list-unstyled mb-4">
                                 <li className="d-flex justify-content-between mb-2">
                                     <span className="text-muted">Subtotal</span>
-                                    <span>${subtotal.toFixed(2)}</span>
+                                    <span>₹{subtotal.toFixed(2)}</span>
                                 </li>
                                 <li className="d-flex justify-content-between mb-2">
                                     <span className="text-muted">Shipping</span>
