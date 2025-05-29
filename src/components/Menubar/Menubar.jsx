@@ -48,7 +48,7 @@ const Menubar = () => {
                 </div>
               </Link>
               <Link to={'/login'} className={"btn btn-outline-primary"}>Login</Link>
-              <Link to={'/login'} className={"btn btn-outline-success"}>Register</Link>
+              <Link to={'/register'} className={"btn btn-outline-success"}>Register</Link>
             </div>
           </div>
         </div>
