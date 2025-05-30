@@ -8,6 +8,8 @@ import Home from "./pages/Home/Home.jsx";
 import Login from "./pages/Login_Register/Login.jsx";
 import Register from "./pages/Login_Register/Register.jsx";
 import PlaceOrder from "./pages/PlaceOrder/PlaceOrder.jsx";
+import OrderSuccess from "./pages/OrderSuccess/OrderSuccess.jsx";
+import ErrorBoundary from "./components/ErrorHandling/ErrorBoundary.jsx";
 
 
 const App = () => {
@@ -21,7 +23,8 @@ const App = () => {
             <Route path={"/food/:id"} element={<FoodDetail />} />
             <Route path={"/cart"} element={<Cart />} />
             <Route path={"/orders"} element={<PlaceOrder />} />
-            <Route path={"/login"} element={<Login />} />
+            <Route path={"/order-success"} element={<OrderSuccess />} />
+            <Route path={"/login"} element={<ErrorBoundary><Login /></ErrorBoundary>} />
             <Route path={"/register"} element={<Register />} />
         </Routes>
     </div>

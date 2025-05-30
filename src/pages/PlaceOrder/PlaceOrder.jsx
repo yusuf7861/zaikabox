@@ -2,29 +2,91 @@ import React, {useContext, useState} from 'react';
 import {assets} from "../../assets/assets.js";
 import {StoreContext} from "../../context/StoreContext.jsx";
 import {calculateCartTotal} from "../../util/cartUtils.js";
-
+import {createOrder, getOrderBillText} from "../../service/orderService.js";
+import {useNavigate} from "react-router-dom";
+import {useLoading} from "../../context/LoadingContext.jsx";
 
 const PlaceOrder = () => {
-
+    const navigate = useNavigate();
+    const loadingContext = useLoading();
     const [validated, setValidated] = useState(false);
+    const [orderError, setOrderError] = useState(null);
+    const [billText, setBillText] = useState(null);
 
-    const handleSubmit = (event) => {
-        const form = event.currentTarget;
-        if (!form.checkValidity()) {
-            event.preventDefault();
-            event.stopPropagation();
-        }
-        setValidated(true);
-    };
-
-    const {foodList, quantities} = useContext(StoreContext);
+    const {foodList, quantities, clearCartItems, userId} = useContext(StoreContext);
     // cart items
     const cartItems = foodList.filter(food => quantities[food.id] > 0);
 
     //calculating
-    const {subtotal, shipping, tax, total } = calculateCartTotal(
+    const {subtotal, shipping, tax, total} = calculateCartTotal(
         cartItems, quantities
     );
+
+    const handleSubmit = async (event) => {
+        event.preventDefault();
+        const form = event.currentTarget;
+
+        if (!form.checkValidity()) {
+            event.stopPropagation();
+            setValidated(true);
+            return;
+        }
+
+        setValidated(true);
+
+        try {
+            // Create order data from form and cart
+            const orderData = {
+                userId: userId,
+                items: cartItems.map(item => ({
+                    foodId: item.id,
+                    name: item.name,
+                    quantity: quantities[item.id],
+                    price: item.price
+                })),
+                billingDetails: {
+                    firstName: form.firstName.value,
+                    lastName: form.lastName.value,
+                    email: form.email.value,
+                    address: form.address.value,
+                    zip: form.zip.value,
+                    locality: form.locality.value,
+                    landmark: form.landmark.value,
+                    country: form.country.value,
+                    state: form.state.value
+                },
+                paymentDetails: {
+                    method: "CARD",
+                    cardNumber: form.cardNumber.value,
+                    cardExpiry: form.cardExpiry.value,
+                    cardCvv: form.cardCvv.value,
+                    cardName: form.cardName.value
+                },
+                orderSummary: {
+                    subtotal,
+                    shipping,
+                    tax,
+                    total
+                }
+            };
+
+            // Create the order
+            const order = await createOrder(orderData);
+
+            // Get the bill text
+            const text = await getOrderBillText(order.id);
+            setBillText(text);
+
+            // Clear the cart
+            await clearCartItems();
+
+            // Navigate to success page
+            navigate('/order-success', { state: { orderId: order.id, billText: text } });
+        } catch (error) {
+            console.error("Error creating order:", error);
+            setOrderError("Failed to create order. Please try again.");
+        }
+    };
 
     return (
         <div id="checkout-form">
@@ -40,6 +102,12 @@ const PlaceOrder = () => {
                     noValidate
                     onSubmit={handleSubmit}
                 >
+                    {orderError && (
+                        <div className="alert alert-danger" role="alert">
+                            {orderError}
+                        </div>
+                    )}
+
                     <div className="row gy-4 gx-lg-5">
                         {/* Billing Details - Left Side */}
                         <div className="col-12 col-md-7">
@@ -48,45 +116,45 @@ const PlaceOrder = () => {
                                 <div className="row g-3">
                                     <div className="col-md-6">
                                         <label htmlFor="firstName" className="form-label">First Name</label>
-                                        <input type="text" className="form-control" id="firstName" placeholder={"John"}
+                                        <input type="text" className="form-control" id="firstName" name="firstName" placeholder={"John"}
                                                required/>
                                         <div className="invalid-feedback">First name is required.</div>
                                     </div>
                                     <div className="col-md-6">
                                         <label htmlFor="lastName" className="form-label">Last Name</label>
-                                        <input type="text" className="form-control" id="lastName" placeholder={"Doe"}
+                                        <input type="text" className="form-control" id="lastName" name="lastName" placeholder={"Doe"}
                                                required/>
                                         <div className="invalid-feedback">Last name is required.</div>
                                     </div>
                                     <div className="col-12">
                                         <label htmlFor="email" className="form-label">Email</label>
-                                        <input type="email" className="form-control" id="email"
+                                        <input type="email" className="form-control" id="email" name="email"
                                                placeholder={"you@gmail.com"} required/>
                                         <div className="invalid-feedback">Please provide a valid email.</div>
                                     </div>
                                     <div className="col-12">
                                         <label htmlFor="address" className="form-label">Address</label>
-                                        <input type="text" className="form-control" id="address" required/>
+                                        <input type="text" className="form-control" id="address" name="address" required/>
                                         <div className="invalid-feedback">Address is required.</div>
                                     </div>
                                     <div className="col-md-4">
                                         <label htmlFor="zip" className="form-label">Zip</label>
-                                        <input type="text" className="form-control" id="zip" required/>
+                                        <input type="text" className="form-control" id="zip" name="zip" required/>
                                         <div className="invalid-feedback">Zip code is required.</div>
                                     </div>
                                     <div className="col-md-4">
                                         <label htmlFor="locality" className="form-label">Locality</label>
-                                        <input type="text" className="form-control" id="locality" required/>
+                                        <input type="text" className="form-control" id="locality" name="locality" required/>
                                         <div className="invalid-feedback">Locality is required.</div>
                                     </div>
                                     <div className="col-md-4">
                                         <label htmlFor="landmark" className="form-label">Landmark</label>
-                                        <input type="text" className="form-control" id="landmark" required/>
+                                        <input type="text" className="form-control" id="landmark" name="landmark" required/>
                                         <div className="invalid-feedback">Landmark is required.</div>
                                     </div>
                                     <div className="col-md-6">
                                         <label htmlFor="country" className="form-label">Country</label>
-                                        <select id="country" className="form-select" required>
+                                        <select id="country" name="country" className="form-select" required>
                                             <option value="">Choose...</option>
                                             <option>India</option>
                                         </select>
@@ -94,10 +162,11 @@ const PlaceOrder = () => {
                                     </div>
                                     <div className="col-md-6">
                                         <label htmlFor="state" className="form-label">State</label>
-                                        <select id="state" className="form-select" required>
+                                        <select id="state" name="state" className="form-select" required>
                                             <option value="">Choose...</option>
                                             <option>Uttar Pradesh</option>
                                         </select>
+                                        <div className="invalid-feedback">Please select a state.</div>
                                     </div>
                                 </div>
                             </div>
@@ -128,7 +197,7 @@ const PlaceOrder = () => {
                                 <div className="mb-3">
                                     <div className="d-flex justify-content-between">
                                         <span className="text-muted">Subtotal</span>
-                                        <span>{subtotal.toFixed(2)}</span>
+                                        <span>₹{subtotal.toFixed(2)}</span>
                                     </div>
                                     <div className="d-flex justify-content-between">
                                         <span className="text-muted">Delivery Fee</span>
@@ -146,29 +215,37 @@ const PlaceOrder = () => {
 
                                 <h6 className="fw-semibold mb-2">Payment Method</h6>
 
-
-
                                 <div className="row g-2 mb-3">
                                     <div className="col-3">
                                         <img src={assets.razorPay} alt="Razorpay" width={100} height={30} />
                                     </div>
                                 </div>
 
-                                <input type="text" className="form-control mb-2" placeholder="Card Number" required/>
+                                <input type="text" className="form-control mb-2" id="cardNumber" name="cardNumber" placeholder="Card Number" required/>
                                 <div className="row g-2 mb-2">
                                     <div className="col">
-                                        <input type="text" className="form-control" placeholder="MM/YY" required/>
+                                        <input type="text" className="form-control" id="cardExpiry" name="cardExpiry" placeholder="MM/YY" required/>
                                     </div>
                                     <div className="col">
-                                        <input type="text" className="form-control" placeholder="CVV" required/>
+                                        <input type="text" className="form-control" id="cardCvv" name="cardCvv" placeholder="CVV" required/>
                                     </div>
                                 </div>
-                                <input type="text" className="form-control mb-3" placeholder="Name on Card" required/>
+                                <input type="text" className="form-control mb-3" id="cardName" name="cardName" placeholder="Name on Card" required/>
 
                                 <button type="submit"
-                                        className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2">
-                                    <span className="material-symbols-outlined">payments</span>
-                                    Place Order
+                                        className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
+                                        disabled={loadingContext.getLoadingState('createOrder') || cartItems.length === 0}>
+                                    {loadingContext.getLoadingState('createOrder') ? (
+                                        <>
+                                            <span className="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                                            Processing...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <span className="material-symbols-outlined">payments</span>
+                                            Place Order
+                                        </>
+                                    )}
                                 </button>
 
                                 <p className="text-muted small text-center mt-3">

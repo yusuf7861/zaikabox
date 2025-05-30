@@ -1,14 +1,15 @@
 import axios from "axios";
-// import React, { useContext } from "react";
-import { Link } from "react-router-dom";
+import { useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { AppContext } from "../../context/AppContext.jsx";
 import { useState } from "react";
 
 
 const Login = () => {
+  const { backendUrl } = useContext(AppContext);
+  const navigate = useNavigate();
 
-  // const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -18,10 +19,34 @@ const Login = () => {
 
     setLoading(true);
     try {
-      const response = await axios.post("http://localhost:8080/api/v1/users/login", FormData);
+      const loginData = {
+        email: email,
+        password: password
+      };
+
+      const response = await axios.post(
+        `${backendUrl}/login`, 
+        loginData, 
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
       if (response.status === 200) {
+        // Handle the swapped token and email in the response
+        const { token, email } = response.data;
+
+        // Store the actual token (which is in the email field) in localStorage
+        localStorage.setItem('authToken', email); // The JWT token is in the email field
+        localStorage.setItem('userEmail', token); // The email is in the token field
+
         setLoading(false);
         toast.success("Login successful");
+
+        // Navigate to home page or dashboard after successful login
+        navigate('/');
       }
     } catch (err) {
       setLoading(false);
@@ -80,7 +105,7 @@ const Login = () => {
           <button type="submit" className="btn btn-primary w-100" disabled={loading}>
             {loading ? "Loading..." : "Login"}
           </button>
-          
+
           <div className="mt-3 text-center">
             <p>
               Don't have an account?{" "}

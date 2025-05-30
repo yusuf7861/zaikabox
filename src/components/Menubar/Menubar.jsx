@@ -1,13 +1,44 @@
 import "./Menubar.css";
 import {assets} from "../../assets/assets.js";
-import {Link} from "react-router-dom";
-import {useContext, useState} from "react";
+import {Link, useNavigate, useLocation} from "react-router-dom";
+import {useContext, useState, useEffect} from "react";
 import {StoreContext} from "../../context/StoreContext.jsx";
+import { toast } from "react-toastify";
 
 const Menubar = () => {
-
+  const navigate = useNavigate();
+  const location = useLocation();
   const [active, setActive] = useState('home');
-  const { quantities } = useContext(StoreContext);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userEmail, setUserEmail] = useState('');
+  const { quantities, clearCartItems } = useContext(StoreContext);
+
+  // Check if user is logged in on component mount and when location changes
+  useEffect(() => {
+    const authToken = localStorage.getItem('authToken');
+    const email = localStorage.getItem('userEmail');
+
+    if (authToken) {
+      setIsLoggedIn(true);
+      setUserEmail(email || '');
+    } else {
+      setIsLoggedIn(false);
+      setUserEmail('');
+    }
+  }, [location]);
+
+  // Logout function
+  const handleLogout = () => {
+    // Clear the cart before logging out
+    clearCartItems();
+
+    localStorage.removeItem('authToken');
+    localStorage.removeItem('userEmail');
+    setIsLoggedIn(false);
+    setUserEmail('');
+    toast.success('Logged out successfully');
+    navigate('/');
+  };
 
   // Total cart items from context
   const totalItems = Object.values(quantities).filter(qty => qty > 0).length;
@@ -47,8 +78,18 @@ const Menubar = () => {
                   )}
                 </div>
               </Link>
-              <Link to={'/login'} className={"btn btn-outline-primary"}>Login</Link>
-              <Link to={'/register'} className={"btn btn-outline-success"}>Register</Link>
+
+              {isLoggedIn ? (
+                <div className="d-flex align-items-center gap-3">
+                  <span className="text-primary">{userEmail}</span>
+                  <button onClick={handleLogout} className="btn btn-outline-danger">Logout</button>
+                </div>
+              ) : (
+                <>
+                  <Link to={'/login'} className={"btn btn-outline-primary"}>Login</Link>
+                  <Link to={'/register'} className={"btn btn-outline-success"}>Register</Link>
+                </>
+              )}
             </div>
           </div>
         </div>
