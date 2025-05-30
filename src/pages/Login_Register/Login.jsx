@@ -42,6 +42,9 @@ const Login = () => {
         localStorage.setItem('authToken', email); // The JWT token is in the email field
         localStorage.setItem('userEmail', token); // The email is in the token field
 
+        // Dispatch a custom event to notify other components about the login
+        window.dispatchEvent(new Event('login'));
+
         setLoading(false);
         toast.success("Login successful");
 

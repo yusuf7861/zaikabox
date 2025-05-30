@@ -11,7 +11,7 @@ const Menubar = () => {
   const [active, setActive] = useState('home');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [userEmail, setUserEmail] = useState('');
-  const { quantities, clearCartItems } = useContext(StoreContext);
+  const { quantities } = useContext(StoreContext);
 
   // Check if user is logged in on component mount and when location changes
   useEffect(() => {
@@ -29,15 +29,13 @@ const Menubar = () => {
 
   // Logout function
   const handleLogout = () => {
-    // Clear the cart before logging out
-    clearCartItems();
-
     localStorage.removeItem('authToken');
     localStorage.removeItem('userEmail');
     setIsLoggedIn(false);
     setUserEmail('');
     toast.success('Logged out successfully');
-    navigate('/');
+    // Refresh the page instead of clearing cart items
+    window.location.href = '/';
   };
 
   // Total cart items from context

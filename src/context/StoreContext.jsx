@@ -30,11 +30,21 @@ export const StoreContextProvider = (props) => {
             }
         };
 
+        // Listen for login event
+        const handleLogin = () => {
+            const authToken = localStorage.getItem('authToken');
+            setIsLoggedIn(!!authToken);
+        };
+
         window.addEventListener('storage', handleStorageChange);
+        window.addEventListener('login', handleLogin);
+
         return () => {
             window.removeEventListener('storage', handleStorageChange);
+            window.removeEventListener('login', handleLogin);
         };
     }, []);
+
 
     // Fetch the cart from the server
     const fetchCart = async () => {
