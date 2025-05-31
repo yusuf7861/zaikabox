@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { parseBillText } from '../../service/orderService.js';
+import { jsPDF } from 'jspdf';
+import 'jspdf-autotable';
 
 const OrderSuccess = () => {
     const location = useLocation();
@@ -37,6 +39,66 @@ const OrderSuccess = () => {
         document.body.removeChild(element);
     };
 
+    // Function to generate and download bill as PDF
+    const downloadPDF = () => {
+        if (!parsedBill) return;
+
+        const doc = new jsPDF();
+
+        // Add header
+        doc.setFontSize(18);
+        doc.text('ZaikaBox - Order Bill', 105, 15, { align: 'center' });
+        doc.setLineWidth(0.5);
+        doc.line(20, 20, 190, 20);
+
+        // Add order details
+        doc.setFontSize(12);
+        doc.text(`Order ID: ${parsedBill.orderId}`, 20, 30);
+        doc.text(`Order Date: ${parsedBill.orderDate}`, 20, 37);
+        doc.text(`Payment Mode: ${parsedBill.paymentMode}`, 120, 30);
+        doc.text(`Status: ${parsedBill.status}`, 120, 37);
+
+        // Add items table
+        const tableColumn = ["No.", "Item", "Qty", "Unit Price", "Total"];
+        const tableRows = [];
+
+        parsedBill.items.forEach(item => {
+            const itemData = [
+                item.number,
+                item.name,
+                item.quantity,
+                `$${item.unitPrice.toFixed(2)}`,
+                `$${item.total.toFixed(2)}`
+            ];
+            tableRows.push(itemData);
+        });
+
+        doc.autoTable({
+            head: [tableColumn],
+            body: tableRows,
+            startY: 45,
+            theme: 'grid',
+            styles: { fontSize: 10 },
+            headStyles: { fillColor: [66, 139, 202] }
+        });
+
+        // Add totals
+        const finalY = doc.lastAutoTable.finalY + 10;
+        doc.text(`Subtotal: $${parsedBill.subtotal.toFixed(2)}`, 150, finalY, { align: 'right' });
+        doc.text(`GST (${parsedBill.gstRate}%): $${parsedBill.gst.toFixed(2)}`, 150, finalY + 7, { align: 'right' });
+        doc.setFontSize(14);
+        doc.text(`Total: $${parsedBill.total.toFixed(2)}`, 150, finalY + 15, { align: 'right' });
+
+        // Add footer
+        doc.setLineWidth(0.5);
+        doc.line(20, finalY + 25, 190, finalY + 25);
+        doc.setFontSize(12);
+        doc.text('Thank you for your order!', 105, finalY + 32, { align: 'center' });
+
+        // Save the PDF
+        doc.save(`order_invoice_${parsedBill.orderId}.pdf`);
+    };
+
     return (
         <div className="container py-5">
             <div className="text-center mb-5">
@@ -70,13 +132,23 @@ const OrderSuccess = () => {
                                     >
                                         {showBill ? 'Hide Bill' : 'View Bill'}
                                     </button>
-                                    <button 
-                                        className="btn btn-sm btn-outline-secondary" 
-                                        onClick={downloadBill}
-                                    >
-                                        <i className="bi bi-download me-1"></i>
-                                        Download
-                                    </button>
+                                    <div className="btn-group">
+                                        <button 
+                                            className="btn btn-sm btn-outline-secondary" 
+                                            onClick={downloadBill}
+                                        >
+                                            <i className="bi bi-download me-1"></i>
+                                            Text
+                                        </button>
+                                        <button 
+                                            className="btn btn-sm btn-outline-secondary" 
+                                            onClick={downloadPDF}
+                                            disabled={!parsedBill}
+                                        >
+                                            <i className="bi bi-file-pdf me-1"></i>
+                                            PDF
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                             {showBill && (

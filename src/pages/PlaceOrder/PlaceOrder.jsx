@@ -12,6 +12,7 @@ const PlaceOrder = () => {
     const [validated, setValidated] = useState(false);
     const [orderError, setOrderError] = useState(null);
     const [billText, setBillText] = useState(null);
+    const [paymentMethod, setPaymentMethod] = useState("CARD");
 
     const {foodList, quantities, clearCartItems, userId} = useContext(StoreContext);
     // cart items
@@ -55,12 +56,15 @@ const PlaceOrder = () => {
                     country: form.country.value,
                     state: form.state.value
                 },
-                paymentDetails: {
+                paymentDetails: paymentMethod === "CARD" ? {
                     method: "CARD",
                     cardNumber: form.cardNumber.value,
                     cardExpiry: form.cardExpiry.value,
                     cardCvv: form.cardCvv.value,
                     cardName: form.cardName.value
+                } : {
+                    method: "UPI",
+                    upiId: form.upiId.value
                 },
                 orderSummary: {
                     subtotal,
@@ -204,7 +208,7 @@ const PlaceOrder = () => {
                                         <span>₹{shipping.toFixed(2)}</span>
                                     </div>
                                     <div className="d-flex justify-content-between">
-                                        <span className="text-muted">Tax(10%)</span>
+                                        <span className="text-muted">GST</span>
                                         <span>₹{tax.toFixed(2)}</span>
                                     </div>
                                     <div className="d-flex justify-content-between fw-bold border-top pt-2 mt-2">
@@ -215,22 +219,39 @@ const PlaceOrder = () => {
 
                                 <h6 className="fw-semibold mb-2">Payment Method</h6>
 
+                                <div className="mb-3">
+                                    <div className="form-check form-check-inline">
+                                        <input className="form-check-input" type="radio" name="paymentMethod" id="paymentMethodCard" value="CARD" defaultChecked onChange={() => setPaymentMethod("CARD")} />
+                                        <label className="form-check-label" htmlFor="paymentMethodCard">Card</label>
+                                    </div>
+                                    <div className="form-check form-check-inline">
+                                        <input className="form-check-input" type="radio" name="paymentMethod" id="paymentMethodUPI" value="UPI" onChange={() => setPaymentMethod("UPI")} />
+                                        <label className="form-check-label" htmlFor="paymentMethodUPI">UPI</label>
+                                    </div>
+                                </div>
+
                                 <div className="row g-2 mb-3">
                                     <div className="col-3">
                                         <img src={assets.razorPay} alt="Razorpay" width={100} height={30} />
                                     </div>
                                 </div>
 
-                                <input type="text" className="form-control mb-2" id="cardNumber" name="cardNumber" placeholder="Card Number" required/>
-                                <div className="row g-2 mb-2">
-                                    <div className="col">
-                                        <input type="text" className="form-control" id="cardExpiry" name="cardExpiry" placeholder="MM/YY" required/>
-                                    </div>
-                                    <div className="col">
-                                        <input type="text" className="form-control" id="cardCvv" name="cardCvv" placeholder="CVV" required/>
-                                    </div>
-                                </div>
-                                <input type="text" className="form-control mb-3" id="cardName" name="cardName" placeholder="Name on Card" required/>
+                                {paymentMethod === "CARD" ? (
+                                    <>
+                                        <input type="text" className="form-control mb-2" id="cardNumber" name="cardNumber" placeholder="Card Number" required={paymentMethod === "CARD"}/>
+                                        <div className="row g-2 mb-2">
+                                            <div className="col">
+                                                <input type="text" className="form-control" id="cardExpiry" name="cardExpiry" placeholder="MM/YY" required={paymentMethod === "CARD"}/>
+                                            </div>
+                                            <div className="col">
+                                                <input type="text" className="form-control" id="cardCvv" name="cardCvv" placeholder="CVV" required={paymentMethod === "CARD"}/>
+                                            </div>
+                                        </div>
+                                        <input type="text" className="form-control mb-3" id="cardName" name="cardName" placeholder="Name on Card" required={paymentMethod === "CARD"}/>
+                                    </>
+                                ) : (
+                                    <input type="text" className="form-control mb-3" id="upiId" name="upiId" placeholder="UPI ID (e.g., name@upi)" required={paymentMethod === "UPI"}/>
+                                )}
 
                                 <button type="submit"
                                         className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"
