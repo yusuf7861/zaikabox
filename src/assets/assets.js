@@ -3,13 +3,15 @@ import cart from './cart.png'
 import razorPay from './razorpay.svg'
 import contact from './contact-us.svg'
 import payment from './payment.svg'
+import bg from './bg-image.jpg'
 
 export const assets = {
     logo,
     cart,
     razorPay,
     contact,
-    payment
+    payment,
+    bg
 }
 
 export const categories = [

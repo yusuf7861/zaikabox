@@ -23,8 +23,8 @@ const ExploreMenu = ({category, setCategory}) => {
             <h2 className={"d-flex h2 fw-bold text-secondary mb-2 align-items-center justify-content-between"}>
                 Explore Our Menu
                 <div className={"d-flex"}>
-                    <i className={"bi bi-arrow-left-circle scroll-icon"} ref={scrollLeft}></i>
-                    <i className={"bi bi-arrow-right-circle scroll-icon"} ref={scrollRight}></i>
+                    <i className={"bi bi-arrow-left-circle scroll-icon"} onClick={scrollLeft}></i>
+                    <i className={"bi bi-arrow-right-circle scroll-icon"} onClick={scrollRight}></i>
                 </div>
             </h2>
             <div className={"d-flex justify-content-between gap-4 overflow-auto explore-menu-list"}>

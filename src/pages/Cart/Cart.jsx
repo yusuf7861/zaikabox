@@ -145,7 +145,7 @@ export const Cart = () => {
                             {/*    <button className="btn btn-primary">Apply</button>*/}
                             {/*</div>*/}
 
-                            <button className="btn btn-primary w-100 mb-3" onClick={() => navigate('/orders')}>
+                            <button className="btn btn-primary w-100 mb-3" onClick={() => navigate('/place-order')}>
                                 <i className="bi bi-credit-card"></i> Proceed to Checkout
                             </button>
                             <p className="text-center text-muted small">Secure checkout powered by RazorPay</p>
