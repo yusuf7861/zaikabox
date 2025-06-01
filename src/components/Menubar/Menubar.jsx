@@ -80,6 +80,7 @@ const Menubar = () => {
               {isLoggedIn ? (
                 <div className="d-flex align-items-center gap-3">
                   <span className="text-primary">{userEmail}</span>
+                  <Link to="/orders" className="btn btn-outline-secondary">My Orders</Link>
                   <button onClick={handleLogout} className="btn btn-outline-danger">Logout</button>
                 </div>
               ) : (

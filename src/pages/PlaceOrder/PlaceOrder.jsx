@@ -12,7 +12,7 @@ const PlaceOrder = () => {
     const [validated, setValidated] = useState(false);
     const [orderError, setOrderError] = useState(null);
     const [billText, setBillText] = useState(null);
-    const [paymentMethod, setPaymentMethod] = useState("CARD");
+    const [paymentMethod, setPaymentMethod] = useState("UPI");
 
     const {foodList, quantities, clearCartItems, userId} = useContext(StoreContext);
     // cart items
@@ -56,16 +56,11 @@ const PlaceOrder = () => {
                     country: form.country.value,
                     state: form.state.value
                 },
-                paymentDetails: paymentMethod === "CARD" ? {
-                    method: "CARD",
-                    cardNumber: form.cardNumber.value,
-                    cardExpiry: form.cardExpiry.value,
-                    cardCvv: form.cardCvv.value,
-                    cardName: form.cardName.value
-                } : {
-                    method: "UPI",
+                paymentDetails: {
+                    method: paymentMethod,
                     upiId: form.upiId.value
                 },
+                paymentMode: paymentMethod,
                 orderSummary: {
                     subtotal,
                     shipping,
@@ -84,8 +79,8 @@ const PlaceOrder = () => {
             // Clear the cart
             await clearCartItems();
 
-            // Navigate to success page
-            navigate('/order-success', { state: { orderId: order.id, billText: text } });
+            // Navigate to orders page
+            navigate('/orders', { state: { orderId: order.id, billText: text } });
         } catch (error) {
             console.error("Error creating order:", error);
             setOrderError("Failed to create order. Please try again.");
@@ -220,12 +215,16 @@ const PlaceOrder = () => {
                                 <h6 className="fw-semibold mb-2">Payment Method</h6>
 
                                 <div className="mb-3">
-                                    <div className="form-check form-check-inline">
-                                        <input className="form-check-input" type="radio" name="paymentMethod" id="paymentMethodCard" value="CARD" defaultChecked onChange={() => setPaymentMethod("CARD")} />
-                                        <label className="form-check-label" htmlFor="paymentMethodCard">Card</label>
-                                    </div>
-                                    <div className="form-check form-check-inline">
-                                        <input className="form-check-input" type="radio" name="paymentMethod" id="paymentMethodUPI" value="UPI" onChange={() => setPaymentMethod("UPI")} />
+                                    <div className="form-check">
+                                        <input 
+                                            className="form-check-input" 
+                                            type="radio" 
+                                            name="paymentMethod" 
+                                            id="paymentMethodUPI" 
+                                            value="UPI" 
+                                            checked={paymentMethod === "UPI"} 
+                                            onChange={(e) => setPaymentMethod(e.target.value)} 
+                                        />
                                         <label className="form-check-label" htmlFor="paymentMethodUPI">UPI</label>
                                     </div>
                                 </div>
@@ -236,22 +235,7 @@ const PlaceOrder = () => {
                                     </div>
                                 </div>
 
-                                {paymentMethod === "CARD" ? (
-                                    <>
-                                        <input type="text" className="form-control mb-2" id="cardNumber" name="cardNumber" placeholder="Card Number" required={paymentMethod === "CARD"}/>
-                                        <div className="row g-2 mb-2">
-                                            <div className="col">
-                                                <input type="text" className="form-control" id="cardExpiry" name="cardExpiry" placeholder="MM/YY" required={paymentMethod === "CARD"}/>
-                                            </div>
-                                            <div className="col">
-                                                <input type="text" className="form-control" id="cardCvv" name="cardCvv" placeholder="CVV" required={paymentMethod === "CARD"}/>
-                                            </div>
-                                        </div>
-                                        <input type="text" className="form-control mb-3" id="cardName" name="cardName" placeholder="Name on Card" required={paymentMethod === "CARD"}/>
-                                    </>
-                                ) : (
-                                    <input type="text" className="form-control mb-3" id="upiId" name="upiId" placeholder="UPI ID (e.g., name@upi)" required={paymentMethod === "UPI"}/>
-                                )}
+                                <input type="text" className="form-control mb-3" id="upiId" name="upiId" placeholder="UPI ID (e.g., name@upi)" required={true}/>
 
                                 <button type="submit"
                                         className="btn btn-primary w-100 d-flex align-items-center justify-content-center gap-2"

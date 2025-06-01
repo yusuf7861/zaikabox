@@ -73,7 +73,7 @@ export const getOrder = withLoading('getOrder', async (orderId) => {
 // Get all orders for the current user
 export const getUserOrders = withLoading('getUserOrders', async () => {
     try {
-        const response = await axios.get(`${API_URL}/user`, { withCredentials: true });
+        const response = await axios.get(`${API_URL}`, { withCredentials: true });
         return response.data;
     } catch (error) {
         console.error("Failed to fetch user orders:", error);

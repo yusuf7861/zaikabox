@@ -17,6 +17,7 @@ const withLoading = (operation, fn) => async (...args) => {
     try {
         const result = await fn(...args);
         return result;
+        // eslint-disable-next-line no-useless-catch
     } catch (error) {
         throw error;
     } finally {
