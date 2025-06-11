@@ -13,11 +13,15 @@ const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [apiError, setApiError] = useState("");
+
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
 
     setLoading(true);
+    setApiError("");
+
     try {
       const loginData = {
         email: email,
@@ -50,17 +54,17 @@ const Login = () => {
 
         // Navigate to home page or dashboard after successful login
         navigate('/');
+      } else if (response.status === 403) {
+        setApiError(response.statusText);
       }
     } catch (err) {
       setLoading(false);
       if (err.response && err.response.data) {
-        toast.error(err.response.data.message);
+        setApiError(err.response.data.message ?? "Login failed");
       } else {
-        toast.error("Something went wrong");
+        setApiError("Something went wrong");
       }
-      return;
     }
-
   }
 
 
@@ -70,6 +74,14 @@ const Login = () => {
     >
       <div className="card p-4" style={{ maxWidth: "400px", width: "100%" }}>
         <h2 className="text-center mb-4">Login</h2>
+
+        {/* Show API error if it exists */}
+        {apiError && (
+            <div className="alert alert-danger" role="alert">
+              {apiError}
+            </div>
+        )}
+
         <form onSubmit={onSubmitHandler}>
           <div className="mb-3">
             <label htmlFor="email" className="form-label">
