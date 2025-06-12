@@ -1,8 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { getUserOrders, getOrderBillText, parseBillText } from '../../service/orderService.js';
+import { getUserOrders, getOrderBillText, getOrderBillPdf} from '../../service/orderService.js';
 import { useLoading } from '../../context/LoadingContext.jsx';
-import { jsPDF } from 'jspdf';
 import 'jspdf-autotable';
 
 const Orders = () => {
@@ -32,7 +31,7 @@ const Orders = () => {
     useEffect(() => {
         if (location.state && location.state.orderId) {
             setExpandedOrderId(location.state.orderId);
-            
+
             // If we have bill text from the state, store it
             if (location.state.billText) {
                 setBillTexts(prev => ({
@@ -82,79 +81,42 @@ const Orders = () => {
         }
     };
 
-    const downloadBillText = (orderId) => {
+    const downloadBillText = async (orderId) => {
         if (!billTexts[orderId]) return;
 
-        const element = document.createElement('a');
-        const file = new Blob([billTexts[orderId]], {type: 'text/plain'});
-        element.href = URL.createObjectURL(file);
-        element.download = `order_bill_${orderId}.txt`;
-        document.body.appendChild(element);
-        element.click();
-        document.body.removeChild(element);
+        try {
+
+            await getOrderBillText(orderId);
+
+            const element = document.createElement('a');
+            const file = new Blob([billTexts[orderId]], {type: 'text/plain'});
+            element.href = URL.createObjectURL(file);
+            element.download = `order_bill_${orderId}.txt`;
+            document.body.appendChild(element);
+            element.click();
+            document.body.removeChild(element);
+        } catch (e) {
+            console.error("Error downloading bill:", e);
+        }
     };
 
-    const downloadBillPDF = (orderId) => {
-        if (!billTexts[orderId]) return;
+    const downloadBillPDF = async (orderId) => {
+        try {
+            const blobData = await getOrderBillPdf(orderId);
 
-        const parsedBill = parseBillText(billTexts[orderId]);
-        if (!parsedBill) return;
-
-        const doc = new jsPDF();
-
-        // Add header
-        doc.setFontSize(18);
-        doc.text('ZaikaBox - Order Bill', 105, 15, { align: 'center' });
-        doc.setLineWidth(0.5);
-        doc.line(20, 20, 190, 20);
-
-        // Add order details
-        doc.setFontSize(12);
-        doc.text(`Order ID: ${parsedBill.orderId}`, 20, 30);
-        doc.text(`Order Date: ${parsedBill.orderDate}`, 20, 37);
-        doc.text(`Payment Mode: ${parsedBill.paymentMode}`, 120, 30);
-        doc.text(`Status: ${parsedBill.status}`, 120, 37);
-
-        // Add items table
-        const tableColumn = ["No.", "Item", "Qty", "Unit Price", "Total"];
-        const tableRows = [];
-
-        parsedBill.items.forEach(item => {
-            const itemData = [
-                item.number,
-                item.name,
-                item.quantity,
-                `$${item.unitPrice.toFixed(2)}`,
-                `$${item.total.toFixed(2)}`
-            ];
-            tableRows.push(itemData);
-        });
-
-        doc.autoTable({
-            head: [tableColumn],
-            body: tableRows,
-            startY: 45,
-            theme: 'grid',
-            styles: { fontSize: 10 },
-            headStyles: { fillColor: [66, 139, 202] }
-        });
-
-        // Add totals
-        const finalY = doc.lastAutoTable.finalY + 10;
-        doc.text(`Subtotal: $${parsedBill.subtotal.toFixed(2)}`, 150, finalY, { align: 'right' });
-        doc.text(`GST (${parsedBill.gstRate}%): $${parsedBill.gst.toFixed(2)}`, 150, finalY + 7, { align: 'right' });
-        doc.setFontSize(14);
-        doc.text(`Total: $${parsedBill.total.toFixed(2)}`, 150, finalY + 15, { align: 'right' });
-
-        // Add footer
-        doc.setLineWidth(0.5);
-        doc.line(20, finalY + 25, 190, finalY + 25);
-        doc.setFontSize(12);
-        doc.text('Thank you for your order!', 105, finalY + 32, { align: 'center' });
-
-        // Save the PDF
-        doc.save(`order_invoice_${parsedBill.orderId}.pdf`);
+            const url = window.URL.createObjectURL(new Blob([blobData]));
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `order-${orderId}-bill.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Error downloading bill:", error);
+        }
     };
+
 
     return (
         <div className="container py-5">
@@ -203,7 +165,7 @@ const Orders = () => {
             ) : (
                 <div className="row">
                     {filteredOrders.map(order => (
-                        <div key={order.id} className="col-12 mb-4">
+                        <div key={order.orderId} className="col-12 mb-4">
                             <div className="card">
                                 <div className="card-header d-flex justify-content-between align-items-center">
                                     <div>
@@ -224,14 +186,14 @@ const Orders = () => {
                                         </span>
                                         <button 
                                             className="btn btn-sm btn-outline-primary" 
-                                            onClick={() => toggleOrderDetails(order.id)}
+                                            onClick={() => toggleOrderDetails(order.orderId)}
                                         >
-                                            {expandedOrderId === order.id ? 'Hide Details' : 'View Details'}
+                                            {expandedOrderId === order.orderId ? 'Hide Details' : 'View Details'}
                                         </button>
                                     </div>
                                 </div>
-                                
-                                {expandedOrderId === order.id && (
+
+                                {expandedOrderId === order.orderId && (
                                     <div className="card-body">
                                         <div className="mb-4">
                                             <h6 className="fw-bold">Order Items</h6>
@@ -258,7 +220,7 @@ const Orders = () => {
                                                 </table>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="row">
                                             <div className="col-md-6">
                                                 <h6 className="fw-bold">Order Details</h6>
@@ -271,22 +233,22 @@ const Orders = () => {
                                                 <div className="btn-group">
                                                     <button 
                                                         className="btn btn-outline-secondary" 
-                                                        onClick={() => downloadBillText(order.id)}
-                                                        disabled={!billTexts[order.id]}
+                                                        onClick={() => downloadBillText(order.orderId)}
+                                                        disabled={!billTexts[order.orderId]}
                                                     >
                                                         <i className="bi bi-file-text me-1"></i>
                                                         Text
                                                     </button>
                                                     <button 
                                                         className="btn btn-outline-secondary" 
-                                                        onClick={() => downloadBillPDF(order.id)}
-                                                        disabled={!billTexts[order.id]}
+                                                        onClick={() => downloadBillPDF(order.orderId)}
+                                                        disabled={!billTexts[order.orderId]}
                                                     >
                                                         <i className="bi bi-file-pdf me-1"></i>
                                                         PDF
                                                     </button>
                                                 </div>
-                                                {!billTexts[order.id] && loadingContext.getLoadingState('getOrderBillText') && (
+                                                {!billTexts[order.orderId] && loadingContext.getLoadingState('getOrderBillText') && (
                                                     <div className="mt-2">
                                                         <small className="text-muted">Loading bill...</small>
                                                     </div>

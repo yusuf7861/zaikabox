@@ -73,14 +73,14 @@ const PlaceOrder = () => {
             const order = await createOrder(orderData);
 
             // Get the bill text
-            const text = await getOrderBillText(order.id);
+            const text = await getOrderBillText(order.orderId);
             setBillText(text);
 
             // Clear the cart
             await clearCartItems();
 
             // Navigate to orders page
-            navigate('/orders', { state: { orderId: order.id, billText: text } });
+            navigate('/orders', { state: { orderId: order.orderId } });
         } catch (error) {
             console.error("Error creating order:", error);
             setOrderError("Failed to create order. Please try again.");
@@ -229,11 +229,11 @@ const PlaceOrder = () => {
                                     </div>
                                 </div>
 
-                                <div className="row g-2 mb-3">
-                                    <div className="col-3">
-                                        <img src={assets.razorPay} alt="Razorpay" width={100} height={30} />
-                                    </div>
-                                </div>
+                                    {/*<div className="row g-2 mb-3">*/}
+                                    {/*    <div className="col-3">*/}
+                                    {/*        <img src={assets.razorPay} alt="Razorpay" width={100} height={30} />*/}
+                                    {/*    </div>*/}
+                                    {/*</div>*/}
 
                                 <input type="text" className="form-control mb-3" id="upiId" name="upiId" placeholder="UPI ID (e.g., name@upi)" required={true}/>
 
@@ -247,8 +247,7 @@ const PlaceOrder = () => {
                                         </>
                                     ) : (
                                         <>
-                                            <span className="material-symbols-outlined">payments</span>
-                                            Place Order
+                                            <span className="material-symbols-outlined">Proceed Payment</span>
                                         </>
                                     )}
                                 </button>

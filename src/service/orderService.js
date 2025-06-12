@@ -43,6 +43,20 @@ export const getOrderBillText = withLoading('getOrderBillText', async (orderId) 
     }
 });
 
+// Get the bill for an order in PDF format
+export const getOrderBillPdf = withLoading('getOrderBillPdf', async (orderId) => {
+    try {
+        const response = await axios.get(`${API_URL}/${orderId}/bill/pdf`, { 
+            withCredentials: true,
+            responseType: 'blob'
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Failed to fetch order bill PDF:", error);
+        throw error;
+    }
+});
+
 // Create a new order
 export const createOrder = withLoading('createOrder', async (orderData) => {
     try {
@@ -81,6 +95,7 @@ export const getUserOrders = withLoading('getUserOrders', async () => {
     }
 });
 
+// TODO
 // Update an order's status
 export const updateOrderStatus = withLoading('updateOrderStatus', async (orderId, status) => {
     try {
@@ -97,76 +112,4 @@ export const updateOrderStatus = withLoading('updateOrderStatus', async (orderId
     }
 });
 
-// Parse the text bill into a structured object
-export const parseBillText = (billText) => {
-    if (!billText) return null;
-    
-    const lines = billText.split('\n');
-    const result = {
-        orderId: '',
-        orderDate: '',
-        paymentMode: '',
-        status: '',
-        items: [],
-        subtotal: 0,
-        gst: 0,
-        gstRate: 0,
-        total: 0
-    };
-    
-    // Extract order details
-    for (let i = 0; i < lines.length; i++) {
-        const line = lines[i].trim();
-        
-        if (line.startsWith('Order ID:')) {
-            result.orderId = line.replace('Order ID:', '').trim();
-        } else if (line.startsWith('Order Date:')) {
-            result.orderDate = line.replace('Order Date:', '').trim();
-        } else if (line.startsWith('Payment Mode:')) {
-            result.paymentMode = line.replace('Payment Mode:', '').trim();
-        } else if (line.startsWith('Status:')) {
-            result.status = line.replace('Status:', '').trim();
-        } else if (line.startsWith('No.') && line.includes('Item') && line.includes('Qty')) {
-            // Skip the header and separator lines
-            i += 2;
-            
-            // Parse items until we hit the separator
-            while (i < lines.length && !lines[i].startsWith('---') && lines[i].trim() !== '') {
-                const itemLine = lines[i].trim();
-                const parts = itemLine.split(/\s+/);
-                
-                if (parts.length >= 5) {
-                    const itemNumber = parseInt(parts[0]);
-                    const unitPrice = parseFloat(parts[parts.length - 2].replace('$', ''));
-                    const total = parseFloat(parts[parts.length - 1].replace('$', ''));
-                    const quantity = parseInt(parts[parts.length - 3]);
-                    
-                    // Extract item name (everything between the item number and quantity)
-                    const nameEndIndex = parts.length - 3;
-                    const nameStartIndex = 1;
-                    const itemName = parts.slice(nameStartIndex, nameEndIndex).join(' ').trim();
-                    
-                    result.items.push({
-                        number: itemNumber,
-                        name: itemName,
-                        quantity: quantity,
-                        unitPrice: unitPrice,
-                        total: total
-                    });
-                }
-                
-                i++;
-            }
-        } else if (line.startsWith('Subtotal:')) {
-            result.subtotal = parseFloat(line.split('$')[1].trim());
-        } else if (line.includes('GST') && line.includes('%')) {
-            const gstParts = line.split('(')[1].split(')');
-            result.gstRate = parseFloat(gstParts[0].replace('%', '').trim());
-            result.gst = parseFloat(line.split('$')[1].trim());
-        } else if (line.startsWith('Total:')) {
-            result.total = parseFloat(line.split('$')[1].trim());
-        }
-    }
-    
-    return result;
-};
+
