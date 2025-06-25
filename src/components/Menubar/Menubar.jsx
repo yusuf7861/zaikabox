@@ -1,9 +1,10 @@
 import "./Menubar.css";
-import {assets} from "../../assets/assets.js";
+import {assets, backendUrl} from "../../assets/assets.js";
 import {Link, useNavigate, useLocation} from "react-router-dom";
 import {useContext, useState, useEffect} from "react";
 import {StoreContext} from "../../context/StoreContext.jsx";
 import { toast } from "react-toastify";
+import axios from "axios";
 
 const Menubar = () => {
   const navigate = useNavigate();
@@ -27,16 +28,28 @@ const Menubar = () => {
     }
   }, [location]);
 
-  // Logout function
-  const handleLogout = () => {
-    localStorage.removeItem('authToken');
-    localStorage.removeItem('userEmail');
-    setIsLoggedIn(false);
-    setUserEmail('');
-    toast.success('Logged out successfully');
-    // Refresh the page instead of clearing cart items
-    window.location.href = '/';
-  };
+  // Handle logout
+  const handleLogout = async () => {
+    try {
+      const token = localStorage.getItem('authToken');
+      await axios.post(`${backendUrl}/api/v1/users/logout`, {}, {
+        headers: {
+            'Authorization': `Bearer ${token}`
+        }
+      });
+
+      localStorage.removeItem('authToken');
+      localStorage.removeItem('userEmail');
+      setIsLoggedIn(false);
+      setUserEmail('');
+      toast.success('You have been logged out successfully');
+
+      window.location.href = '/login';
+    } catch (e) {
+      console.error(e);
+      toast.error('Failed to log out. Please try again.');
+    }
+  }
 
   // Total cart items from context
   const totalItems = Object.values(quantities).filter(qty => qty > 0).length;
