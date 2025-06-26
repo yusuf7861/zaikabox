@@ -9,7 +9,7 @@ export const AppContextProvider = (props) => {
 
     axios.defaults.withCredentials = true;
 
-    const backendUrl = "http://localhost:8080/api/v1/users";
+    const backendUrl = "https://zaikabox-app-latest.onrender.com/api/v1/users";
     // const [isLoggedIn, setIsLoggedIn] = useState(false);
     // const [userData, setUserData] = useState(false);
 

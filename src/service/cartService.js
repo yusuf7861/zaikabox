@@ -1,7 +1,7 @@
 import axios from "axios";
 import { setLoadingContext as setFoodLoadingContext } from "./foodService.js";
 
-const API_URL = "http://localhost:8080/api/v1/carts";
+const API_URL = "https://zaikabox-app-latest.onrender.com/api/v1/carts";
 
 // This function will be used to get the loading context in a non-React environment
 let loadingContextValue = null;
@@ -20,6 +20,7 @@ const withLoading = (operation, fn) => async (...args) => {
     try {
         const result = await fn(...args);
         return result;
+        // eslint-disable-next-line no-useless-catch
     } catch (error) {
         throw error;
     } finally {

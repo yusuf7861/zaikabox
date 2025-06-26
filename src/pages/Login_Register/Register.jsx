@@ -16,7 +16,7 @@ const Register = () => {
     setLoading(true);
     try {
       const formData = { name, email, password };
-      const response = await axios.post("http://localhost:8080/api/v1/users/register", formData);
+      const response = await axios.post("https://zaikabox-app-latest.onrender.com/api/v1/users/register", formData);
       if (response.status === 201) {
         setLoading(false);
         toast.success("Account created successfully");

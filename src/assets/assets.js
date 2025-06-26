@@ -24,4 +24,4 @@ export const categories = [
     {  category: 'Salad', icon: 'https://media-assets.swiggy.com/swiggy/image/upload/fl_lossy,f_auto,q_auto/PC_Mweb/Salad.png' },
 ];
 
-export const backendUrl = import.meta.env.SPRINGBOOT_BACKEND_URL || 'http://localhost:8080';
+export const backendUrl = import.meta.env.SPRINGBOOT_BACKEND_URL || 'https://zaikabox-app-latest.onrender.com';
