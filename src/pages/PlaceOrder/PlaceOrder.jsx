@@ -11,8 +11,14 @@ const PlaceOrder = () => {
     const loadingContext = useLoading();
     const [validated, setValidated] = useState(false);
     const [orderError, setOrderError] = useState(null);
-    const [billText, setBillText] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState("UPI");
+
+    // Add state for billing details to support autofill
+    const [billingValues, setBillingValues] = useState({
+        firstName: '', lastName: '', email: '',
+        address: '', zip: '', locality: '', landmark: '',
+        country: '', state: ''
+    });
 
     const { foodList, quantities, clearCartItems, userId } = useContext(StoreContext);
     // cart items
@@ -22,6 +28,32 @@ const PlaceOrder = () => {
     const { subtotal, shipping, tax, total } = calculateCartTotal(
         cartItems, quantities
     );
+
+    const handleInputChange = (e) => {
+        const { name, value } = e.target;
+        setBillingValues(prev => ({ ...prev, [name]: value }));
+    };
+
+    const handleUseMyLocation = () => {
+        if ("geolocation" in navigator) {
+            navigator.geolocation.getCurrentPosition(function (position) {
+                // Mocking reverse geocoding for now as we don't have an API key
+                // In a real app, use Google Maps or OpenStreetMap API here
+                setBillingValues(prev => ({
+                    ...prev,
+                    address: `Lat: ${position.coords.latitude.toFixed(4)}, Long: ${position.coords.longitude.toFixed(4)}`, // Fallback
+                    locality: "Detected Locality",
+                    zip: "000000"
+                }));
+                // toast.success("Location detected!"); 
+            }, function (error) {
+                console.error("Error getting location:", error);
+                // toast.error("Could not access location.");
+            });
+        } else {
+            // toast.error("Geolocation not supported");
+        }
+    };
 
     const handleSubmit = async (event) => {
         event.preventDefault();
@@ -46,19 +78,19 @@ const PlaceOrder = () => {
                     price: item.price
                 })),
                 billingDetails: {
-                    firstName: form.firstName.value,
-                    lastName: form.lastName.value,
-                    email: form.email.value,
-                    address: form.address.value,
-                    zip: form.zip.value,
-                    locality: form.locality.value,
-                    landmark: form.landmark.value,
-                    country: form.country.value,
-                    state: form.state.value
+                    firstName: billingValues.firstName || form.firstName.value,
+                    lastName: billingValues.lastName || form.lastName.value,
+                    email: billingValues.email || form.email.value,
+                    address: billingValues.address || form.address.value,
+                    zip: billingValues.zip || form.zip.value,
+                    locality: billingValues.locality || form.locality.value,
+                    landmark: billingValues.landmark || form.landmark.value,
+                    country: billingValues.country || form.country.value,
+                    state: billingValues.state || form.state.value
                 },
                 paymentDetails: {
                     method: paymentMethod,
-                    upiId: form.upiId.value
+                    upiId: form.upiId ? form.upiId.value : ''
                 },
                 paymentMode: paymentMethod,
                 orderSummary: {
@@ -74,13 +106,12 @@ const PlaceOrder = () => {
 
             // Get the bill text
             const text = await getOrderBillText(order.orderId);
-            setBillText(text);
 
             // Clear the cart
             await clearCartItems();
 
-            // Navigate to orders page
-            navigate('/orders', { state: { orderId: order.orderId } });
+            // Navigate to orders page to show receipt
+            navigate('/orders', { state: { orderId: order.orderId, billText: text, showReceipt: true } });
         } catch (error) {
             console.error("Error creating order:", error);
             setOrderError("Failed to create order. Please try again.");
@@ -110,49 +141,64 @@ const PlaceOrder = () => {
                         {/* Billing Details - Left Side */}
                         <div className="col-12 col-md-7">
                             <div className="card border-0 shadow-lg rounded-4 h-100 overflow-hidden">
-                                <div className="card-header bg-white p-4 border-bottom-0">
+                                <div className="card-header bg-white p-4 border-bottom-0 d-flex justify-content-between align-items-center">
                                     <h4 className="mb-0 fw-bold text-secondary"><i className="bi bi-geo-alt me-2 text-primary"></i>Delivery Information</h4>
                                 </div>
                                 <div className="card-body p-4 pt-0">
                                     <div className="row g-3">
                                         <div className="col-md-6">
                                             <label htmlFor="firstName" className="form-label text-muted small fw-bold">FIRST NAME</label>
-                                            <input type="text" className="form-control form-control-lg bg-light border-0" id="firstName" name="firstName" placeholder="John" required />
+                                            <input type="text" className="form-control form-control-lg bg-light border-0" id="firstName" name="firstName" placeholder="John" required
+                                                value={billingValues.firstName} onChange={handleInputChange} />
                                             <div className="invalid-feedback">First name is required.</div>
                                         </div>
                                         <div className="col-md-6">
                                             <label htmlFor="lastName" className="form-label text-muted small fw-bold">LAST NAME</label>
-                                            <input type="text" className="form-control form-control-lg bg-light border-0" id="lastName" name="lastName" placeholder="Doe" required />
+                                            <input type="text" className="form-control form-control-lg bg-light border-0" id="lastName" name="lastName" placeholder="Doe" required
+                                                value={billingValues.lastName} onChange={handleInputChange} />
                                             <div className="invalid-feedback">Last name is required.</div>
                                         </div>
                                         <div className="col-12">
                                             <label htmlFor="email" className="form-label text-muted small fw-bold">EMAIL ADDRESS</label>
-                                            <input type="email" className="form-control form-control-lg bg-light border-0" id="email" name="email" placeholder="you@example.com" required />
+                                            <input type="email" className="form-control form-control-lg bg-light border-0" id="email" name="email" placeholder="you@example.com" required
+                                                value={billingValues.email} onChange={handleInputChange} />
                                             <div className="invalid-feedback">Please provide a valid email.</div>
                                         </div>
+
                                         <div className="col-12">
-                                            <label htmlFor="address" className="form-label text-muted small fw-bold">STREET ADDRESS</label>
-                                            <input type="text" className="form-control form-control-lg bg-light border-0" id="address" name="address" placeholder="123 Main St" required />
+                                            <label htmlFor="address" className="form-label text-muted small fw-bold d-flex justify-content-between">
+                                                STREET ADDRESS
+                                                <button type="button" onClick={handleUseMyLocation} className="btn btn-link btn-sm p-0 text-primary text-decoration-none fw-bold">
+                                                    <i className="bi bi-crosshair me-1"></i>Use My Location
+                                                </button>
+                                            </label>
+                                            <input type="text" className="form-control form-control-lg bg-light border-0" id="address" name="address" placeholder="123 Main St" required
+                                                value={billingValues.address} onChange={handleInputChange} />
                                             <div className="invalid-feedback">Address is required.</div>
                                         </div>
+
                                         <div className="col-md-4">
                                             <label htmlFor="zip" className="form-label text-muted small fw-bold">ZIP CODE</label>
-                                            <input type="text" className="form-control form-control-lg bg-light border-0" id="zip" name="zip" required />
+                                            <input type="text" className="form-control form-control-lg bg-light border-0" id="zip" name="zip" required
+                                                value={billingValues.zip} onChange={handleInputChange} />
                                             <div className="invalid-feedback">Zip code is required.</div>
                                         </div>
                                         <div className="col-md-4">
                                             <label htmlFor="locality" className="form-label text-muted small fw-bold">LOCALITY</label>
-                                            <input type="text" className="form-control form-control-lg bg-light border-0" id="locality" name="locality" required />
+                                            <input type="text" className="form-control form-control-lg bg-light border-0" id="locality" name="locality" required
+                                                value={billingValues.locality} onChange={handleInputChange} />
                                             <div className="invalid-feedback">Locality is required.</div>
                                         </div>
                                         <div className="col-md-4">
                                             <label htmlFor="landmark" className="form-label text-muted small fw-bold">LANDMARK</label>
-                                            <input type="text" className="form-control form-control-lg bg-light border-0" id="landmark" name="landmark" required />
+                                            <input type="text" className="form-control form-control-lg bg-light border-0" id="landmark" name="landmark" required
+                                                value={billingValues.landmark} onChange={handleInputChange} />
                                             <div className="invalid-feedback">Landmark is required.</div>
                                         </div>
                                         <div className="col-md-6">
                                             <label htmlFor="country" className="form-label text-muted small fw-bold">COUNTRY</label>
-                                            <select id="country" name="country" className="form-select form-select-lg bg-light border-0" required>
+                                            <select id="country" name="country" className="form-select form-select-lg bg-light border-0" required
+                                                value={billingValues.country} onChange={handleInputChange} >
                                                 <option value="">Choose...</option>
                                                 <option>India</option>
                                             </select>
@@ -160,7 +206,8 @@ const PlaceOrder = () => {
                                         </div>
                                         <div className="col-md-6">
                                             <label htmlFor="state" className="form-label text-muted small fw-bold">STATE</label>
-                                            <select id="state" name="state" className="form-select form-select-lg bg-light border-0" required>
+                                            <select id="state" name="state" className="form-select form-select-lg bg-light border-0" required
+                                                value={billingValues.state} onChange={handleInputChange} >
                                                 <option value="">Choose...</option>
                                                 <option>Uttar Pradesh</option>
                                             </select>
@@ -175,100 +222,102 @@ const PlaceOrder = () => {
                         <div className="col-12 col-md-5">
                             <div className="card border-0 shadow-lg rounded-4 h-100 overflow-hidden">
                                 <div className="card-header bg-primary text-white p-4">
-                                    <h4 className="mb-0 fw-bold">Order Summary</h4>
+                                    <h4 className="mb-0 fw-bold">Payment Details</h4>
                                 </div>
                                 <div className="card-body p-4">
-                                    <div className="mb-4 overflow-auto" style={{ maxHeight: '300px' }}>
-                                        {foodList.filter(food => quantities[food.id] > 0).map(food => (
-                                            <div
-                                                key={food.id}
-                                                className="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom"
-                                            >
-                                                <div className="d-flex align-items-center gap-3">
-                                                    <div className="position-relative">
-                                                        <img src={food.imageUrl} alt={food.name} className="rounded-3 object-fit-cover" width="60" height="60" />
-                                                        <span className="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary shadow-sm" style={{ fontSize: '0.6rem' }}>
-                                                            {quantities[food.id]}
-                                                        </span>
-                                                    </div>
-                                                    <div>
-                                                        <h6 className="mb-0 fw-semibold text-dark">{food.name}</h6>
-                                                        <small className="text-muted">₹{food.price} x {quantities[food.id]}</small>
-                                                    </div>
+
+                                    {/* Razorpay-style Payment Options */}
+                                    <h6 className="fw-bold text-secondary mb-3">Select Payment Method</h6>
+
+                                    <div className="payment-options d-flex flex-column gap-2 mb-4">
+                                        {/* UPI Option */}
+                                        <label className={`card p-3 border cursor-pointer transition-all ${paymentMethod === 'UPI' ? 'border-primary bg-primary-subtle' : 'border-light bg-light hover-shadow'}`} style={{ cursor: 'pointer' }}>
+                                            <div className="d-flex align-items-center">
+                                                <div className="form-check">
+                                                    <input className="form-check-input" type="radio" name="paymentMethod" id="upi" value="UPI"
+                                                        checked={paymentMethod === 'UPI'} onChange={() => setPaymentMethod('UPI')} />
                                                 </div>
-                                                <div className="fw-bold text-dark">
-                                                    ₹{(food.price * quantities[food.id]).toFixed(2)}
+                                                <div className="ms-3 flex-grow-1">
+                                                    <div className="d-flex align-items-center justify-content-between">
+                                                        <span className="fw-semibold text-dark">UPI</span>
+                                                        <img src="https://cdn.iconscout.com/icon/free/png-256/free-upi-2085056-1747946.png" alt="UPI" height="24" />
+                                                    </div>
+                                                    <small className="text-muted d-block">Google Pay, PhonePe, Paytm</small>
                                                 </div>
                                             </div>
-                                        ))}
+
+                                            {paymentMethod === 'UPI' && (
+                                                <div className="mt-3 ps-4 fade-in">
+                                                    <input
+                                                        type="text"
+                                                        className="form-control bg-white"
+                                                        name="upiId"
+                                                        placeholder="Enter UPI ID (e.g. name@oksbi)"
+                                                        required
+                                                    />
+                                                    <div className="form-text text-muted small">A verification request will be sent to your UPI app.</div>
+                                                </div>
+                                            )}
+                                        </label>
+
+                                        {/* Card Option (Disabled visual) */}
+                                        <label className="card p-3 border-light bg-light opacity-50" style={{ cursor: 'not-allowed' }}>
+                                            <div className="d-flex align-items-center">
+                                                <div className="form-check">
+                                                    <input className="form-check-input" type="radio" name="paymentMethod" disabled />
+                                                </div>
+                                                <div className="ms-3 flex-grow-1">
+                                                    <div className="d-flex align-items-center justify-content-between">
+                                                        <span className="fw-semibold text-muted">Credit / Debit Card</span>
+                                                        <div className="d-flex gap-1">
+                                                            <i className="bi bi-credit-card-2-front"></i>
+                                                        </div>
+                                                    </div>
+                                                    <small className="text-muted">Temporarily Unavailable</small>
+                                                </div>
+                                            </div>
+                                        </label>
                                     </div>
 
-                                    <div className="bg-light rounded-3 p-3 mb-4">
-                                        <div className="d-flex justify-content-between mb-2">
+                                    {/* Order Summary Compact */}
+                                    <div className="bg-light rounded-3 p-3 mb-4 border border-dashed">
+                                        <h6 className="fw-bold mb-3">Order Summary</h6>
+                                        <div className="d-flex justify-content-between mb-2 small">
                                             <span className="text-muted">Subtotal</span>
                                             <span className="fw-semibold">₹{subtotal.toFixed(2)}</span>
                                         </div>
-                                        <div className="d-flex justify-content-between mb-2">
+                                        <div className="d-flex justify-content-between mb-2 small">
                                             <span className="text-muted">Delivery Fee</span>
                                             <span className="fw-semibold">₹{shipping.toFixed(2)}</span>
                                         </div>
-                                        <div className="d-flex justify-content-between mb-2">
+                                        <div className="d-flex justify-content-between mb-2 small">
                                             <span className="text-muted">GST (18%)</span>
                                             <span className="fw-semibold">₹{tax.toFixed(2)}</span>
                                         </div>
-                                        <div className="d-flex justify-content-between border-top border-secondary pt-2 mt-2">
-                                            <span className="fw-bold fs-5 text-secondary">Total</span>
+                                        <div className="d-flex justify-content-between border-top pt-2 mt-2">
+                                            <span className="fw-bold fs-5 text-dark">Payload Amount</span>
                                             <span className="fw-bold fs-5 text-primary">₹{total.toFixed(2)}</span>
                                         </div>
                                     </div>
 
-                                    <h6 className="fw-bold text-secondary mb-3">Payment Method</h6>
-                                    <div className="mb-4">
-                                        <div className="form-check p-3 border rounded-3 mb-2 bg-light">
-                                            <input
-                                                className="form-check-input"
-                                                type="radio"
-                                                name="paymentMethod"
-                                                id="paymentMethodUPI"
-                                                value="UPI"
-                                                checked={paymentMethod === "UPI"}
-                                                onChange={(e) => setPaymentMethod(e.target.value)}
-                                            />
-                                            <label className="form-check-label w-100 fw-semibold cursor-pointer" htmlFor="paymentMethodUPI">
-                                                UPI Payment
-                                                <i className="bi bi-qr-code-scan float-end text-primary"></i>
-                                            </label>
-                                        </div>
-
-                                        <input
-                                            type="text"
-                                            className="form-control form-control-lg bg-light border-0 mt-2"
-                                            id="upiId"
-                                            name="upiId"
-                                            placeholder="Enter UPI ID (e.g. name@upi)"
-                                            required={true}
-                                        />
-                                    </div>
-
                                     <button type="submit"
-                                        className="btn btn-primary w-100 btn-lg shadow rounded-pill"
+                                        className="btn btn-primary w-100 btn-lg shadow rounded-pill py-3"
                                         disabled={loadingContext.getLoadingState('createOrder') || cartItems.length === 0}>
                                         {loadingContext.getLoadingState('createOrder') ? (
                                             <>
                                                 <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
-                                                Processing...
+                                                Processing Secure Payment...
                                             </>
                                         ) : (
                                             <>
-                                                Proceed to Pay <i className="bi bi-arrow-right ms-2"></i>
+                                                Pay ₹{total.toFixed(2)} <i className="bi bi-shield-lock-fill ms-2"></i>
                                             </>
                                         )}
                                     </button>
 
-                                    <div className="text-center mt-3">
-                                        <small className="text-muted">
-                                            <i className="bi bi-shield-lock-fill me-1"></i>Secure checkout by Razorpay
-                                        </small>
+                                    <div className="text-center mt-3 d-flex justify-content-center align-items-center gap-2">
+                                        <img src={assets.razorPay} alt="Razorpay" height="20" style={{ opacity: 0.7 }} />
+                                        <small className="text-muted border-start ps-2">Trusted Payment Partner</small>
                                     </div>
                                 </div>
                             </div>

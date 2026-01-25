@@ -35,10 +35,10 @@ const FoodDetail = () => {
                 <div className="card shadow-lg border-0 overflow-hidden rounded-4">
                     <div className="row g-0">
                         {/* Image Section */}
-                        <div className="col-md-6 position-relative">
+                        <div className="col-md-5 position-relative">
                             <img
                                 className="img-fluid w-100 h-100 object-fit-cover"
-                                style={{ minHeight: "400px" }}
+                                style={{ minHeight: "350px", maxHeight: "600px" }}
                                 src={data.imageUrl}
                                 alt={data.name}
                             />
@@ -50,8 +50,8 @@ const FoodDetail = () => {
                         </div>
 
                         {/* Details Section */}
-                        <div className="col-md-6 bg-white p-5 d-flex flex-column justify-content-center">
-                            <h1 className="display-4 fw-bold text-secondary mb-2">{data.name}</h1>
+                        <div className="col-md-7 bg-white p-4 p-md-5 d-flex flex-column justify-content-center">
+                            <h1 className="display-5 fw-bold text-secondary mb-2">{data.name}</h1>
 
                             <div className="d-flex align-items-center mb-4">
                                 <div className="text-primary fs-2 fw-bold me-3">₹{data.price}</div>
@@ -59,7 +59,7 @@ const FoodDetail = () => {
                                 <span className="ms-3 badge bg-success-subtle text-success rounded-pill">20% OFF</span>
                             </div>
 
-                            <p className="lead text-muted mb-5" style={{ lineHeight: '1.8' }}>
+                            <p className="lead text-muted mb-4 fs-6" style={{ lineHeight: '1.8' }}>
                                 {data.description}
                             </p>
 
@@ -84,7 +84,7 @@ const FoodDetail = () => {
                             </div>
 
                             {/* Additional Info / Trust Badges */}
-                            <div className="row mt-5 pt-4 border-top g-3">
+                            <div className="row mt-4 pt-4 border-top g-3">
                                 <div className="col-4 text-center border-end">
                                     <i className="bi bi-clock fs-4 text-primary mb-2 d-block"></i>
                                     <small className="text-muted">30 min Delivery</small>
