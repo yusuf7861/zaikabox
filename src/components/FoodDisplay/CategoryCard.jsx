@@ -1,65 +1,63 @@
-import React, {useContext} from 'react';
-import {Link} from "react-router-dom";
-import {StoreContext} from "../../context/StoreContext.jsx";
+import React, { useContext } from 'react';
+import { Link } from "react-router-dom";
+import { StoreContext } from "../../context/StoreContext.jsx";
 
 const CategoryCard = ({ id, name, image, price, category, description, rating = 4.5 }) => {
-    const {addQuantity, removeQuantity, quantities} = useContext(StoreContext);
+    const { addQuantity, removeQuantity, quantities } = useContext(StoreContext);
+
     return (
-        <div className="card h-100 border-0 overflow-hidden" style={{textDecoration: 'none'}}>
-                {/* Image with name overlay */}
-                <div className="position-relative" style={{ height: '9rem' }}>
-                    <Link to={`/food/${id}`}>
-                        <img
-                            src={image}
-                            alt={name}
-                            className="card-img-top h-100 w-100 object-fit-cover"
-                            style={{ transition: 'transform 0.3s' }}
-                            onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)' }
-                            onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)' }
-                        />
-                    </Link>
-                    {/* Overlay for name */}
-                    <div
-                        className="position-absolute bottom-0 start-0 end-0 d-flex align-items-end"
-                        style={{
-                            background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)',
-                            top: 0,
-                            pointerEvents: 'none',
-                        }}
-                    >
-                        <div className="p-2 text-white">
-                            <h6 className="fw-semibold m-0">{name}</h6>
-                        </div>
+        <div className="card h-100 border-0 shadow-sm overflow-hidden group hover-lift">
+            <div className="position-relative overflow-hidden">
+                <Link to={`/food/${id}`}>
+                    <img
+                        src={image}
+                        alt={name}
+                        className="card-img-top w-100 object-fit-cover"
+                        style={{ height: '200px', transition: 'transform 0.5s ease' }}
+                        onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+                        onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                    />
+                </Link>
+                <div className="position-absolute top-0 end-0 m-2">
+                    <span className="badge bg-white text-warning shadow-sm d-flex align-items-center px-2 py-1 rounded-pill">
+                        <i className="bi bi-star-fill me-1 small"></i> {rating}
+                    </span>
+                </div>
+            </div>
+
+            <div className="card-body p-3 d-flex flex-column">
+                <div className="d-flex justify-content-between align-items-start mb-2">
+                    <div>
+                        <h6 className="card-title fw-bold text-secondary mb-1 text-truncate" style={{ maxWidth: '150px' }} title={name}>{name}</h6>
+                        <span className="badge bg-light text-muted fw-normal rounded-pill px-2 py-1 small">{category}</span>
                     </div>
+                    <span className="fw-bold text-primary fs-5">₹{price}</span>
                 </div>
 
-            {/* Details below image */}
-            <div className="p-2">
-                <p className="text-bold small mb-1">{category}</p>
-                <p className="text-muted text-truncate small mb-1">{description}</p>
+                <p className="card-text text-muted small flex-grow-1 text-truncate-2" style={{ display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>
+                    {description}
+                </p>
 
-                {/* Price + Rating side-by-side */}
-                <div className="d-flex justify-content-between align-items-center mb-2">
-                    <p className="fw-bold text-black m-0">₹{price}</p>
-                    <button className="btn btn-sm btn-outline-warning d-flex align-items-center px-2 py-1">
-                        <i className="bi bi-star-fill me-1"></i> {rating}
-                    </button>
-                </div>
+                <div className="mt-3 d-flex align-items-center justify-content-between">
+                    <Link to={`/food/${id}`} className="text-decoration-none small text-primary fw-semibold">
+                        View Details <i className="bi bi-arrow-right ms-1"></i>
+                    </Link>
 
-                {/* Add to Cart */}
-                <div className={"d-flex justify-content-between"}>
-                    <Link to={`/food/${id}`} className="btn btn-primary btn-sm">View Food</Link>
-                        {quantities[id] > 0 ? (
-                            <div className={"d-flex align-items-center gap-1"}>
-                                <button className={"btn btn-danger btn-sm"} onClick={() => removeQuantity(id)}><i className={"bi bi-dash-circle"}></i></button>
-                                <span className={"fw-bold"}>{quantities[id]}</span>
-                                <button className={"btn btn-success btn-sm"} onClick={() => addQuantity(id)}><i className={"bi bi-plus-circle"}></i></button>
-                            </div>
-                        ) : (
-                            <button className={"btn btn-primary btn-sm"} onClick={() => addQuantity(id)}>
-                                <i className="bi bi-plus-circle"></i>
+                    {quantities[id] > 0 ? (
+                        <div className="d-flex align-items-center bg-light rounded-pill p-1 shadow-sm">
+                            <button className="btn btn-sm btn-white text-danger rounded-circle shadow-none p-1" onClick={() => removeQuantity(id)} style={{ width: '28px', height: '28px' }}>
+                                <i className="bi bi-dash"></i>
                             </button>
-                        )}
+                            <span className="mx-2 fw-bold text-secondary small">{quantities[id]}</span>
+                            <button className="btn btn-sm btn-white text-success rounded-circle shadow-none p-1" onClick={() => addQuantity(id)} style={{ width: '28px', height: '28px' }}>
+                                <i className="bi bi-plus"></i>
+                            </button>
+                        </div>
+                    ) : (
+                        <button className="btn btn-sm btn-primary rounded-pill px-3 shadow-sm" onClick={() => addQuantity(id)}>
+                            Add <i className="bi bi-plus ms-1"></i>
+                        </button>
+                    )}
                 </div>
             </div>
         </div>

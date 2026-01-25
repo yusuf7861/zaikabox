@@ -37,8 +37,8 @@ const Login = () => {
       };
 
       const response = await axios.post(
-        `${backendUrl}/login`, 
-        loginData, 
+        `${backendUrl}/login`,
+        loginData,
         {
           headers: {
             'Content-Type': 'application/json'
@@ -240,7 +240,7 @@ const Login = () => {
   );
 
   return (
-    <div className="position-relative min-vh-100 d-flex justify-content-center align-items-center">
+    <div className="position-relative min-vh-100 d-flex justify-content-center align-items-center" style={{ paddingTop: '80px' }}>
       {showReset && renderResetForm()}
       <div className="card p-4" style={{ maxWidth: "400px", width: "100%" }}>
         <h2 className="text-center mb-4">Login</h2>

@@ -1,6 +1,6 @@
 import 'bootstrap/dist/css/bootstrap.min.css';
 import 'bootstrap-icons/font/bootstrap-icons.css';
-import {useState} from "react";
+import { useState } from "react";
 import FoodDisplay from "../../components/FoodDisplay/FoodDisplay.jsx";
 
 
@@ -12,7 +12,7 @@ export const ExploreFood = () => {
 
 
     return (
-        <>
+        <div style={{ paddingTop: '100px' }}>
             <div className="container my-4">
                 <form
                     className="row g-3 align-items-center justify-content-center"
@@ -63,7 +63,7 @@ export const ExploreFood = () => {
             </div>
 
             <FoodDisplay category={category} searchText={searchText} />
-        </>
+        </div>
     )
 }
 

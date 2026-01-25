@@ -35,6 +35,7 @@ const Register = () => {
   return (
     <div
       className="position-relative min-vh-100 d-flex justify-content-center align-items-center"
+      style={{ paddingTop: '80px' }}
     >
       <div className="card p-4" style={{ maxWidth: "400px", width: "100%" }}>
         <h2 className="text-center mb-4">Create Account</h2>
@@ -85,7 +86,7 @@ const Register = () => {
           <button type="submit" className="btn btn-primary w-100" disabled={loading}>
             {loading ? "Creating Account..." : "Register"}
           </button>
-          
+
           <div className="mt-3 text-center">
             <p>
               Already have an account?{" "}

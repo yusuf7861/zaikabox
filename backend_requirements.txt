@@ -1,0 +1,12 @@
+# Backend API Requirements for UI Enhancements
+
+The following fields were used as mock/static data in the frontend (FoodDetail page) to improve the user interface. Please update the backend API to provide these fields in the `GET /api/food/:id` response.
+
+## Food Item Details
+- **originalPrice**: (Number) The price before discount. Used to show the strikethrough price and calculate the "20% OFF" badge. Currently mocked as `price * 1.2`.
+- **rating**: (Number) Average rating of the food item (e.g., 4.5, 4.8). Currently hardcoded as `4.8`.
+- **deliveryTime**: (String/Number) Estimated delivery time for this item (e.g., "30 min"). Currently hardcoded as "30 min".
+- **isHygienic**: (Boolean) Flag to show the "Hygienic" trust badge. Currently hardcoded.
+
+## Justification
+These fields significantly enhance the user experience by providing social proof (ratings), urgency/value (discounts), and logistical information (delivery time), which are standard in premium food delivery apps.

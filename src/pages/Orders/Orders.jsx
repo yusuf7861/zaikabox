@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { getUserOrders, getOrderBillText, getOrderBillPdf} from '../../service/orderService.js';
+import { getUserOrders, getOrderBillText, getOrderBillPdf } from '../../service/orderService.js';
 import { useLoading } from '../../context/LoadingContext.jsx';
 import 'jspdf-autotable';
 
@@ -89,7 +89,7 @@ const Orders = () => {
             await getOrderBillText(orderId);
 
             const element = document.createElement('a');
-            const file = new Blob([billTexts[orderId]], {type: 'text/plain'});
+            const file = new Blob([billTexts[orderId]], { type: 'text/plain' });
             element.href = URL.createObjectURL(file);
             element.download = `order_bill_${orderId}.txt`;
             document.body.appendChild(element);
@@ -119,15 +119,15 @@ const Orders = () => {
 
 
     return (
-        <div className="container py-5">
+        <div className="container py-5" style={{ paddingTop: '100px' }}>
             <div className="d-flex justify-content-between align-items-center mb-4">
                 <h1 className="mb-0">My Orders</h1>
                 <div className="d-flex align-items-center">
                     <label htmlFor="statusFilter" className="me-2">Filter by Status:</label>
-                    <select 
-                        id="statusFilter" 
-                        className="form-select" 
-                        value={selectedStatus} 
+                    <select
+                        id="statusFilter"
+                        className="form-select"
+                        value={selectedStatus}
                         onChange={handleStatusChange}
                     >
                         <option value="ALL">All Orders</option>
@@ -154,8 +154,8 @@ const Orders = () => {
                     </div>
                     <h3>No Orders Found</h3>
                     <p className="text-muted">
-                        {selectedStatus === 'ALL' 
-                            ? "You haven't placed any orders yet." 
+                        {selectedStatus === 'ALL'
+                            ? "You haven't placed any orders yet."
                             : `You don't have any orders with status "${selectedStatus}".`}
                     </p>
                     <Link to="/explore" className="btn btn-primary mt-3">
@@ -175,17 +175,16 @@ const Orders = () => {
                                         </small>
                                     </div>
                                     <div className="d-flex align-items-center">
-                                        <span className={`badge ${
-                                            order.status === 'DELIVERED' || order.status === 'COMPLETED' 
-                                                ? 'bg-success' 
-                                                : order.status === 'CANCELLED' 
-                                                    ? 'bg-danger' 
+                                        <span className={`badge ${order.status === 'DELIVERED' || order.status === 'COMPLETED'
+                                                ? 'bg-success'
+                                                : order.status === 'CANCELLED'
+                                                    ? 'bg-danger'
                                                     : 'bg-warning'
-                                        } me-3`}>
+                                            } me-3`}>
                                             {order.status}
                                         </span>
-                                        <button 
-                                            className="btn btn-sm btn-outline-primary" 
+                                        <button
+                                            className="btn btn-sm btn-outline-primary"
                                             onClick={() => toggleOrderDetails(order.orderId)}
                                         >
                                             {expandedOrderId === order.orderId ? 'Hide Details' : 'View Details'}
@@ -231,16 +230,16 @@ const Orders = () => {
                                             <div className="col-md-6 text-md-end">
                                                 <h6 className="fw-bold">Download Bill</h6>
                                                 <div className="btn-group">
-                                                    <button 
-                                                        className="btn btn-outline-secondary" 
+                                                    <button
+                                                        className="btn btn-outline-secondary"
                                                         onClick={() => downloadBillText(order.orderId)}
                                                         disabled={!billTexts[order.orderId]}
                                                     >
                                                         <i className="bi bi-file-text me-1"></i>
                                                         Text
                                                     </button>
-                                                    <button 
-                                                        className="btn btn-outline-secondary" 
+                                                    <button
+                                                        className="btn btn-outline-secondary"
                                                         onClick={() => downloadBillPDF(order.orderId)}
                                                         disabled={!billTexts[order.orderId]}
                                                     >
