@@ -1,6 +1,8 @@
 import { createContext, useEffect, useState } from "react";
 import { fetchFoodList } from "../service/foodService.js";
-import { getCart, addItemToCart, updateCart, removeItemFromCart, clearCart, setLoadingContext } from "../service/cartService.js";
+import { getCart, addItemToCart, updateCart, removeItemFromCart, clearCart, setLoadingContext, getCartItemCount } from "../service/cartService.js";
+import { initiatePayment, verifyPayment, getPaymentStatus, retryPayment } from "../service/paymentService.js";
+import { trackOrder, cancelOrder } from "../service/orderService.js";
 import { useLoading } from "./LoadingContext.jsx";
 
 export const StoreContext = createContext(null);
@@ -89,11 +91,11 @@ export const StoreContextProvider = (props) => {
             } catch (error) {
                 console.error("Failed to add item to cart:", error);
                 // Fallback to local update if API call fails
-                setQuantities((prev) => ({...prev, [foodId]: (prev[foodId] || 0) + 1}));
+                setQuantities((prev) => ({ ...prev, [foodId]: (prev[foodId] || 0) + 1 }));
             }
         } else {
             // If user is not logged in, just update local state
-            setQuantities((prev) => ({...prev, [foodId]: (prev[foodId] || 0) + 1}));
+            setQuantities((prev) => ({ ...prev, [foodId]: (prev[foodId] || 0) + 1 }));
         }
     };
 
@@ -116,7 +118,7 @@ export const StoreContextProvider = (props) => {
                     console.error("Failed to remove item from cart:", error);
                     // Fallback to local update if API call fails
                     setQuantities((prev) => {
-                        const newQuantities = {...prev};
+                        const newQuantities = { ...prev };
                         delete newQuantities[foodId];
                         return newQuantities;
                     });
@@ -146,19 +148,19 @@ export const StoreContextProvider = (props) => {
                 } catch (error) {
                     console.error("Failed to update cart:", error);
                     // Fallback to local update if API call fails
-                    setQuantities((prev) => ({...prev, [foodId]: prev[foodId] > 0 ? prev[foodId] - 1 : 0}));
+                    setQuantities((prev) => ({ ...prev, [foodId]: prev[foodId] > 0 ? prev[foodId] - 1 : 0 }));
                 }
             }
         } else {
             // If user is not logged in, just update local state
             if (removeCompletely || quantities[foodId] <= 1) {
                 setQuantities((prev) => {
-                    const newQuantities = {...prev};
+                    const newQuantities = { ...prev };
                     delete newQuantities[foodId];
                     return newQuantities;
                 });
             } else {
-                setQuantities((prev) => ({...prev, [foodId]: prev[foodId] > 0 ? prev[foodId] - 1 : 0}));
+                setQuantities((prev) => ({ ...prev, [foodId]: prev[foodId] > 0 ? prev[foodId] - 1 : 0 }));
             }
         }
     };
@@ -190,7 +192,15 @@ export const StoreContextProvider = (props) => {
         quantities,
         cartId,
         userId,
-        isLoggedIn
+        isLoggedIn,
+        // Exporting service functions for use in components
+        initiatePayment,
+        verifyPayment,
+        getPaymentStatus,
+        retryPayment,
+        trackOrder,
+        cancelOrder,
+        getCartItemCount
     };
 
     useEffect(() => {

@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { getUserOrders, getOrderBillText, getOrderBillPdf } from '../../service/orderService.js';
@@ -119,16 +120,16 @@ const Orders = () => {
 
 
     return (
-        <div className="container py-5" style={{ paddingTop: '100px' }}>
-            <div className="d-flex justify-content-between align-items-center mb-4">
-                <h1 className="mb-0">My Orders</h1>
+        <div className="container" style={{ paddingTop: '80px', paddingBottom: '20px' }}>
+            <div className="d-flex justify-content-between align-items-center mb-3">
+                <h4 className="mb-0 fw-bold">My Orders</h4>
                 <div className="d-flex align-items-center">
-                    <label htmlFor="statusFilter" className="me-2">Filter by Status:</label>
                     <select
                         id="statusFilter"
-                        className="form-select"
+                        className="form-select form-select-sm"
                         value={selectedStatus}
                         onChange={handleStatusChange}
+                        style={{ width: 'auto' }}
                     >
                         <option value="ALL">All Orders</option>
                         <option value="PENDING">Pending</option>
@@ -145,117 +146,114 @@ const Orders = () => {
                     <div className="spinner-border text-primary" role="status">
                         <span className="visually-hidden">Loading...</span>
                     </div>
-                    <p className="mt-3">Loading your orders...</p>
+                    <p className="mt-3 small">Loading your orders...</p>
                 </div>
             ) : filteredOrders.length === 0 ? (
                 <div className="text-center py-5">
-                    <div className="mb-4">
-                        <i className="bi bi-bag-x" style={{ fontSize: '4rem', color: '#6c757d' }}></i>
+                    <div className="mb-3">
+                        <i className="bi bi-bag-x text-muted" style={{ fontSize: '3rem' }}></i>
                     </div>
-                    <h3>No Orders Found</h3>
-                    <p className="text-muted">
+                    <h5 className="text-secondary">No Orders Found</h5>
+                    <p className="text-muted small">
                         {selectedStatus === 'ALL'
                             ? "You haven't placed any orders yet."
                             : `You don't have any orders with status "${selectedStatus}".`}
                     </p>
-                    <Link to="/explore" className="btn btn-primary mt-3">
+                    <Link to="/explore" className="btn btn-sm btn-primary mt-2">
                         Explore Menu
                     </Link>
                 </div>
             ) : (
-                <div className="row">
+                <div className="row g-3">
                     {filteredOrders.map(order => (
-                        <div key={order.orderId} className="col-12 mb-4">
-                            <div className="card">
-                                <div className="card-header d-flex justify-content-between align-items-center">
+                        <div key={order.orderId} className="col-lg-6 col-12">
+                            <div className="card shadow-sm border-0 h-100">
+                                <div className="card-header bg-white py-2 d-flex justify-content-between align-items-center">
                                     <div>
-                                        <h5 className="mb-0">Order #{order.orderId}</h5>
-                                        <small className="text-muted">
-                                            {new Date(order.orderDate).toLocaleString()}
-                                        </small>
-                                    </div>
-                                    <div className="d-flex align-items-center">
-                                        <span className={`badge ${order.status === 'DELIVERED' || order.status === 'COMPLETED'
-                                                ? 'bg-success'
-                                                : order.status === 'CANCELLED'
-                                                    ? 'bg-danger'
-                                                    : 'bg-warning'
-                                            } me-3`}>
-                                            {order.status}
+                                        <span className="fw-bold small">#{order.orderId.substring(0, 8)}...</span>
+                                        <span className="text-muted small ms-2">
+                                            {new Date(order.orderDate).toLocaleDateString()}
                                         </span>
-                                        <button
-                                            className="btn btn-sm btn-outline-primary"
-                                            onClick={() => toggleOrderDetails(order.orderId)}
-                                        >
-                                            {expandedOrderId === order.orderId ? 'Hide Details' : 'View Details'}
-                                        </button>
                                     </div>
+                                    <span className={`badge rounded-pill ${order.status === 'DELIVERED' || order.status === 'COMPLETED'
+                                        ? 'bg-success'
+                                        : order.status === 'CANCELLED'
+                                            ? 'bg-danger'
+                                            : 'bg-warning text-dark'
+                                        }`} style={{ fontSize: '0.7rem' }}>
+                                        {order.status}
+                                    </span>
                                 </div>
+                                <div className="card-body p-3">
+                                    <div className="d-flex justify-content-between mb-2 small">
+                                        <span className="text-muted">Total Amount:</span>
+                                        <span className="fw-bold">₹{order.totalAmountWithGST.toFixed(2)}</span>
+                                    </div>
+                                    <div className="d-flex justify-content-between mb-3 small">
+                                        <span className="text-muted">Payment:</span>
+                                        <span>{order.paymentMode}</span>
+                                    </div>
 
-                                {expandedOrderId === order.orderId && (
-                                    <div className="card-body">
-                                        <div className="mb-4">
-                                            <h6 className="fw-bold">Order Items</h6>
-                                            <div className="table-responsive">
-                                                <table className="table table-striped">
-                                                    <thead>
+                                    {expandedOrderId === order.orderId ? (
+                                        <div className="mt-3 border-top pt-3">
+                                            <h6 className="fw-bold small mb-2">Items</h6>
+                                            <div className="table-responsive mb-3">
+                                                <table className="table table-sm table-borderless small mb-0">
+                                                    <thead className="text-muted">
                                                         <tr>
                                                             <th>Item</th>
-                                                            <th>Quantity</th>
-                                                            <th>Price</th>
-                                                            <th>Total</th>
+                                                            <th className="text-end">Qty</th>
+                                                            <th className="text-end">Price</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         {order.items.map((item, index) => (
                                                             <tr key={`${item.name}-${item.unitPrice}-${index}`}>
                                                                 <td>{item.name}</td>
-                                                                <td>{item.quantity}</td>
-                                                                <td>₹{item.unitPrice.toFixed(2)}</td>
-                                                                <td>₹{item.total.toFixed(2)}</td>
+                                                                <td className="text-end">{item.quantity}</td>
+                                                                <td className="text-end">₹{item.total.toFixed(2)}</td>
                                                             </tr>
                                                         ))}
                                                     </tbody>
                                                 </table>
                                             </div>
-                                        </div>
 
-                                        <div className="row">
-                                            <div className="col-md-6">
-                                                <h6 className="fw-bold">Order Details</h6>
-                                                <p className="mb-1"><strong>Payment Mode:</strong> {order.paymentMode}</p>
-                                                <p className="mb-1"><strong>Status:</strong> {order.status}</p>
-                                                <p className="mb-1"><strong>Total Amount:</strong> ₹{order.totalAmountWithGST.toFixed(2)}</p>
-                                            </div>
-                                            <div className="col-md-6 text-md-end">
-                                                <h6 className="fw-bold">Download Bill</h6>
-                                                <div className="btn-group">
+                                            <div className="text-end">
+                                                <div className="btn-group btn-group-sm">
                                                     <button
                                                         className="btn btn-outline-secondary"
                                                         onClick={() => downloadBillText(order.orderId)}
                                                         disabled={!billTexts[order.orderId]}
+                                                        title="Download Text Bill"
                                                     >
-                                                        <i className="bi bi-file-text me-1"></i>
-                                                        Text
+                                                        <i className="bi bi-file-text"></i>
                                                     </button>
                                                     <button
                                                         className="btn btn-outline-secondary"
                                                         onClick={() => downloadBillPDF(order.orderId)}
                                                         disabled={!billTexts[order.orderId]}
+                                                        title="Download PDF Bill"
                                                     >
-                                                        <i className="bi bi-file-pdf me-1"></i>
-                                                        PDF
+                                                        <i className="bi bi-file-pdf"></i>
                                                     </button>
                                                 </div>
-                                                {!billTexts[order.orderId] && loadingContext.getLoadingState('getOrderBillText') && (
-                                                    <div className="mt-2">
-                                                        <small className="text-muted">Loading bill...</small>
-                                                    </div>
-                                                )}
                                             </div>
+                                            <button
+                                                className="btn btn-sm btn-link text-decoration-none w-100 mt-2 text-secondary"
+                                                onClick={() => toggleOrderDetails(order.orderId)}
+                                            >
+                                                <i className="bi bi-chevron-up"></i> Less Details
+                                            </button>
                                         </div>
-                                    </div>
-                                )}
+                                    ) : (
+                                        <button
+                                            className="btn btn-sm btn-outline-primary w-100"
+                                            onClick={() => toggleOrderDetails(order.orderId)}
+                                        >
+                                            View Details
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                     ))}

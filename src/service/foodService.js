@@ -1,6 +1,8 @@
 import axios from "axios";
 
-const API_URL = "https://zaikabox-app-latest.onrender.com/api/v1/foods";
+import { backendUrl } from "../assets/assets.js";
+
+const API_URL = `${backendUrl}/api/v1/foods`;
 
 // This function will be used to get the loading context in a non-React environment
 let loadingContextValue = null;

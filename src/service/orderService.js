@@ -1,7 +1,9 @@
 import axios from "axios";
 import { setLoadingContext as setCartLoadingContext } from "./cartService.js";
 
-const API_URL = "https://zaikabox-app-latest.onrender.com/api/v1/orders";
+import { backendUrl } from "../assets/assets.js";
+
+const API_URL = `${backendUrl}/api/v1/orders`;
 
 // This function will be used to get the loading context in a non-React environment
 let loadingContextValue = null;
@@ -32,7 +34,7 @@ const withLoading = (operation, fn) => async (...args) => {
 // Get the bill for an order in text format
 export const getOrderBillText = withLoading('getOrderBillText', async (orderId) => {
     try {
-        const response = await axios.get(`${API_URL}/${orderId}/bill/text`, { 
+        const response = await axios.get(`${API_URL}/${orderId}/bill/text`, {
             withCredentials: true,
             responseType: 'text'
         });
@@ -46,7 +48,7 @@ export const getOrderBillText = withLoading('getOrderBillText', async (orderId) 
 // Get the bill for an order in PDF format
 export const getOrderBillPdf = withLoading('getOrderBillPdf', async (orderId) => {
     try {
-        const response = await axios.get(`${API_URL}/${orderId}/bill/pdf`, { 
+        const response = await axios.get(`${API_URL}/${orderId}/bill/pdf`, {
             withCredentials: true,
             responseType: 'blob'
         });
@@ -60,7 +62,7 @@ export const getOrderBillPdf = withLoading('getOrderBillPdf', async (orderId) =>
 // Create a new order
 export const createOrder = withLoading('createOrder', async (orderData) => {
     try {
-        const response = await axios.post(API_URL, orderData, { 
+        const response = await axios.post(API_URL, orderData, {
             withCredentials: true,
             headers: {
                 'Content-Type': 'application/json'
@@ -99,7 +101,7 @@ export const getUserOrders = withLoading('getUserOrders', async () => {
 // Update an order's status
 export const updateOrderStatus = withLoading('updateOrderStatus', async (orderId, status) => {
     try {
-        const response = await axios.patch(`${API_URL}/${orderId}/status`, { status }, { 
+        const response = await axios.patch(`${API_URL}/${orderId}/status`, { status }, {
             withCredentials: true,
             headers: {
                 'Content-Type': 'application/json'
@@ -108,6 +110,36 @@ export const updateOrderStatus = withLoading('updateOrderStatus', async (orderId
         return response.data;
     } catch (error) {
         console.error("Failed to update order status:", error);
+        throw error;
+    }
+});
+
+// Track an order
+export const trackOrder = withLoading('trackOrder', async (orderId) => {
+    try {
+        const response = await axios.get(`${API_URL}/${orderId}/track`, {
+            withCredentials: true
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Failed to track order:", error);
+        throw error;
+    }
+});
+
+// Cancel an order
+export const cancelOrder = withLoading('cancelOrder', async (orderId, reason) => {
+    try {
+        const response = await axios.delete(`${API_URL}/${orderId}`, {
+            withCredentials: true,
+            data: { reason }, // Send reason in the body if required by API, DELETE usually doesn't have body but axios supports it via data property
+            headers: {
+                'Content-Type': 'application/json'
+            }
+        });
+        return response.data;
+    } catch (error) {
+        console.error("Failed to cancel order:", error);
         throw error;
     }
 });

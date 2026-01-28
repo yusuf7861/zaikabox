@@ -47,12 +47,39 @@ const Login = () => {
       );
 
       if (response.status === 200) {
-        // Handle the swapped token and email in the response
-        const { token, email } = response.data;
+        console.log("LOGIN RESPONSE DEBUG:", response.data);
 
-        // Store the actual token (which is in the email field) in localStorage
-        localStorage.setItem('authToken', email); // The JWT token is in the email field
-        localStorage.setItem('userEmail', token); // The email is in the token field
+        console.log("LOGIN RESPONSE DEBUG:", response.data);
+
+        let initialToken = response.data.token;
+        let initialEmail = response.data.email;
+
+        // Fail-safe logic: Identify email by '@' symbol
+        let finalToken, finalEmail;
+
+        if (initialToken && initialToken.toString().includes('@') && initialToken.length < 50) {
+          // Token field is actually the email
+          finalEmail = initialToken;
+          finalToken = initialEmail;
+          console.warn("SWAP DETECTED: Token field contained email.");
+        } else if (initialEmail && initialEmail.toString().includes('@') && initialEmail.length < 50) {
+          // Email field is explicitly the email (Expected)
+          finalEmail = initialEmail;
+          finalToken = initialToken;
+        } else {
+          // Fallback: If neither clearly looks like an email, assume standard
+          finalEmail = initialEmail;
+          finalToken = initialToken;
+        }
+
+        console.log("Final AuthToken:", finalToken);
+        console.log("Final UserEmail:", finalEmail);
+
+
+
+        // Store corrected values in localStorage
+        localStorage.setItem('authToken', finalToken);
+        localStorage.setItem('userEmail', finalEmail);
 
         // Dispatch a custom event to notify other components about the login
         window.dispatchEvent(new Event('login'));
@@ -281,33 +308,35 @@ const Login = () => {
     </div>
   );
 
+
   return (
     <div className="position-relative min-vh-100 d-flex justify-content-center align-items-center bg-light" style={{ paddingTop: '80px' }}>
       {showReset && renderResetForm()}
-      <div className="card border-0 shadow-lg rounded-4 overflow-hidden" style={{ maxWidth: "450px", width: "100%" }}>
-        <div className="card-header bg-primary text-white p-4 text-center border-0">
-          <h3 className="mb-0 fw-bold">Welcome Back</h3>
+      <div className="card border-0 shadow-lg rounded-4 overflow-hidden" style={{ maxWidth: "400px", width: "100%" }}>
+        <div className="card-header bg-primary text-white p-3 text-center border-0">
+          <h4 className="mb-0 fw-bold">Welcome Back</h4>
           <p className="mb-0 opacity-75 small">Login to continue your food journey</p>
         </div>
 
-        <div className="card-body p-4 p-md-5">
+        <div className="card-body p-4">
           {apiError && (
-            <div className="alert alert-danger shadow-sm rounded-3 d-flex align-items-center mb-4 fade-in" role="alert">
-              <i className="bi bi-exclamation-octagon-fill me-2 fs-5"></i>
+            <div className="alert alert-danger shadow-sm rounded-3 d-flex align-items-center mb-3 fade-in py-2" role="alert">
+              <i className="bi bi-exclamation-octagon-fill me-2"></i>
               <div className="small">{apiError}</div>
             </div>
           )}
 
           <form onSubmit={onSubmitHandler}>
             <div className="mb-3">
-              <label htmlFor="email" className="form-label text-muted small fw-bold">Email Address</label>
-              <div className="input-group">
+              <label htmlFor="email" className="form-label text-muted small fw-bold mb-1" style={{ fontSize: '0.75rem' }}>EMAIL ADDRESS</label>
+              <div className="input-group input-group-sm">
                 <span className="input-group-text bg-light border-end-0 text-muted"><i className="bi bi-envelope"></i></span>
                 <input
                   type="email"
                   id="email"
-                  className="form-control form-control-lg bg-light border-start-0 ps-0"
+                  className="form-control bg-light border-start-0 ps-0"
                   placeholder="name@example.com"
+                  style={{ fontSize: '0.9rem' }}
                   required
                   onChange={(e) => setEmail(e.target.value)}
                   value={email}
@@ -316,22 +345,24 @@ const Login = () => {
             </div>
             <div className="mb-4">
               <div className="d-flex justify-content-between align-items-center mb-1">
-                <label htmlFor="password" className="form-label text-muted small fw-bold mb-0">Password</label>
+                <label htmlFor="password" className="form-label text-muted small fw-bold mb-0" style={{ fontSize: '0.75rem' }}>PASSWORD</label>
                 <button
                   type="button"
                   className="btn btn-link p-0 text-decoration-none small"
+                  style={{ fontSize: '0.75rem' }}
                   onClick={() => setShowReset(true)}
                 >
                   Forgot password?
                 </button>
               </div>
-              <div className="input-group">
+              <div className="input-group input-group-sm">
                 <span className="input-group-text bg-light border-end-0 text-muted"><i className="bi bi-lock"></i></span>
                 <input
                   type="password"
                   id="password"
-                  className="form-control form-control-lg bg-light border-start-0 ps-0"
+                  className="form-control bg-light border-start-0 ps-0"
                   placeholder="Enter your password"
+                  style={{ fontSize: '0.9rem' }}
                   required
                   onChange={(e) => setPassword(e.target.value)}
                   value={password}
@@ -339,7 +370,7 @@ const Login = () => {
               </div>
             </div>
 
-            <button type="submit" className="btn btn-primary w-100 btn-lg rounded-pill shadow-sm" disabled={loading}>
+            <button type="submit" className="btn btn-primary w-100 rounded-pill shadow-sm" disabled={loading} style={{ fontSize: '0.9rem', padding: '10px' }}>
               {loading ? (
                 <>
                   <span className="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
@@ -347,8 +378,8 @@ const Login = () => {
                 </>
               ) : "Login"}
             </button>
-            <div className="mt-4 text-center">
-              <p className="text-muted mb-0">
+            <div className="mt-3 text-center">
+              <p className="text-muted mb-0 small">
                 Don't have an account?{" "}
                 <Link to="/register" className="text-primary fw-semibold text-decoration-none hover-shadow-sm">
                   Register here

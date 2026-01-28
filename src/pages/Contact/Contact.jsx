@@ -38,7 +38,7 @@ const Contact = () => {
         setSubmitted(false);
 
         try {
-            const response = await axios.post("https://zaikabox-app-latest.onrender.com/contact-us", formData);
+            const response = await axios.post(`${assets.backendUrl}/contact-us`, formData);
 
             // Clear form
             setFormData({

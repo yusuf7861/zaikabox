@@ -2,9 +2,10 @@ import React, { useContext, useState } from 'react';
 import { assets } from "../../assets/assets.js";
 import { StoreContext } from "../../context/StoreContext.jsx";
 import { calculateCartTotal } from "../../util/cartUtils.js";
-import { createOrder, getOrderBillText } from "../../service/orderService.js";
+import { getOrderBillText } from "../../service/orderService.js";
 import { useNavigate } from "react-router-dom";
 import { useLoading } from "../../context/LoadingContext.jsx";
+import { toast } from "react-toastify";
 
 const PlaceOrder = () => {
     const navigate = useNavigate();
@@ -20,7 +21,7 @@ const PlaceOrder = () => {
         country: '', state: ''
     });
 
-    const { foodList, quantities, clearCartItems, userId } = useContext(StoreContext);
+    const { foodList, quantities, clearCartItems, userId, initiatePayment, verifyPayment } = useContext(StoreContext);
     // cart items
     const cartItems = foodList.filter(food => quantities[food.id] > 0);
 
@@ -37,21 +38,16 @@ const PlaceOrder = () => {
     const handleUseMyLocation = () => {
         if ("geolocation" in navigator) {
             navigator.geolocation.getCurrentPosition(function (position) {
-                // Mocking reverse geocoding for now as we don't have an API key
-                // In a real app, use Google Maps or OpenStreetMap API here
                 setBillingValues(prev => ({
                     ...prev,
                     address: `Lat: ${position.coords.latitude.toFixed(4)}, Long: ${position.coords.longitude.toFixed(4)}`, // Fallback
                     locality: "Detected Locality",
                     zip: "000000"
                 }));
-                // toast.success("Location detected!"); 
             }, function (error) {
                 console.error("Error getting location:", error);
-                // toast.error("Could not access location.");
             });
         } else {
-            // toast.error("Geolocation not supported");
         }
     };
 
@@ -68,7 +64,8 @@ const PlaceOrder = () => {
         setValidated(true);
 
         try {
-            // Create order data from form and cart
+
+            // 1. Initiate Payment
             const orderData = {
                 userId: userId,
                 items: cartItems.map(item => ({
@@ -88,33 +85,107 @@ const PlaceOrder = () => {
                     country: billingValues.country || form.country.value,
                     state: billingValues.state || form.state.value
                 },
-                paymentDetails: {
-                    method: paymentMethod,
-                    upiId: form.upiId ? form.upiId.value : ''
+                paymentMode: "RAZORPAY",
+                useCart: true, // Backend requires this explicitly
+                amount: total, // Passing total for reference, though backend likely calculates it
+                currency: "INR"
+            };
+
+            const orderResponse = await initiatePayment(orderData);
+
+            if (!orderResponse || !orderResponse.orderId) {
+                throw new Error("Failed to initiate payment");
+            }
+
+            // 2. Open Razorpay Options
+            const keyId = orderResponse.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
+            if (!keyId) {
+                toast.error("Payment Configuration Error: Key ID missing.");
+                console.error("Razorpay Key ID missing from backend response and .env");
+                return;
+            }
+
+            const options = {
+                key: keyId,
+                amount: orderResponse.amount,
+                currency: orderResponse.currency,
+                name: "ZaikaBox",
+                description: "Order Payment",
+                image: assets.logo, // Ensure logo is available or use a URL
+                order_id: orderResponse.razorpayOrderId,
+                handler: async function (response) {
+                    try {
+                        console.log("Razorpay SDK Success Response:", response);
+
+                        const verifyPayload = {
+                            razorpayOrderId: response.razorpay_order_id,
+                            razorpayPaymentId: response.razorpay_payment_id,
+                            razorpaySignature: response.razorpay_signature,
+                            orderId: orderResponse.orderId
+                        };
+
+                        console.log("Sending Verification Payload:", verifyPayload);
+
+                        // 3. Verify Payment
+                        const verifyResult = await verifyPayment(verifyPayload);
+
+                        console.log("Backend Verification Result:", verifyResult);
+
+                        // Broaden success check to catch any positive indicator
+                        if (verifyResult && (
+                            verifyResult.success === true ||
+                            verifyResult.paymentStatus === "COMPLETED" ||
+                            verifyResult.status === "COMPLETED" ||
+                            verifyResult.status === "PAID" ||         // Added PAID check
+                            verifyResult.orderStatus === "PAID" ||    // Added PAID check
+                            verifyResult.orderStatus === "PENDING" || // Some backends might return Order object in PENDING state but verified
+                            verifyResult.razorpayPaymentId // If we get the payment ID back, it's likely a success object
+                        )) {
+
+                            console.log("Verification Successful. Redirecting...");
+                            const finalOrderId = verifyResult.orderId || orderResponse.orderId;
+
+                            // Try to get bill text, but don't block redirection if it fails
+                            let text = "";
+                            try {
+                                text = await getOrderBillText(finalOrderId);
+                            } catch (billError) {
+                                console.warn("Could not fetch bill text, proceeding anyway:", billError);
+                            }
+
+                            await clearCartItems();
+                            navigate('/orders', { state: { orderId: finalOrderId, billText: text, showReceipt: true } });
+                            toast.success("Order placed successfully!");
+                        } else {
+                            console.error("Verification Condition Failed. verifyResult:", verifyResult);
+                            toast.error("Payment verification status unknown. Please check your Orders.");
+                            // Optional: Redirect to orders anyway so they can see if it worked?
+                            // navigate('/orders');
+                        }
+                    } catch (err) {
+                        console.error("Verification error in handler:", err);
+                        toast.error("Payment verification failed: " + (err.response?.data?.message || err.message));
+                    }
                 },
-                paymentMode: paymentMethod,
-                orderSummary: {
-                    subtotal,
-                    shipping,
-                    tax,
-                    total
+                prefill: {
+                    name: `${billingValues.firstName} ${billingValues.lastName}`,
+                    email: billingValues.email,
+                    contact: "" // Add phone to billingValues if needed
+                },
+                theme: {
+                    color: "#tomato"
                 }
             };
 
-            // Create the order
-            const order = await createOrder(orderData);
+            const rzp1 = new window.Razorpay(options);
+            rzp1.on('payment.failed', function (response) {
+                toast.error("Payment Failed: " + response.error.description);
+            });
+            rzp1.open();
 
-            // Get the bill text
-            const text = await getOrderBillText(order.orderId);
-
-            // Clear the cart
-            await clearCartItems();
-
-            // Navigate to orders page to show receipt
-            navigate('/orders', { state: { orderId: order.orderId, billText: text, showReceipt: true } });
         } catch (error) {
-            console.error("Error creating order:", error);
-            setOrderError("Failed to create order. Please try again.");
+            console.error("Error placing order:", error);
+            setOrderError("Failed to initiate payment. Please try again.");
         }
     };
 
@@ -230,50 +301,17 @@ const PlaceOrder = () => {
                                     <h6 className="fw-bold text-secondary mb-3">Select Payment Method</h6>
 
                                     <div className="payment-options d-flex flex-column gap-2 mb-4">
-                                        {/* UPI Option */}
-                                        <label className={`card p-3 border cursor-pointer transition-all ${paymentMethod === 'UPI' ? 'border-primary bg-primary-subtle' : 'border-light bg-light hover-shadow'}`} style={{ cursor: 'pointer' }}>
+                                        <label className={`card p-3 border cursor-pointer transition-all border-primary bg-primary-subtle`} style={{ cursor: 'pointer' }}>
                                             <div className="d-flex align-items-center">
                                                 <div className="form-check">
-                                                    <input className="form-check-input" type="radio" name="paymentMethod" id="upi" value="UPI"
-                                                        checked={paymentMethod === 'UPI'} onChange={() => setPaymentMethod('UPI')} />
+                                                    <input className="form-check-input" type="radio" name="paymentMethod" id="razorpay" value="RAZORPAY" defaultChecked />
                                                 </div>
                                                 <div className="ms-3 flex-grow-1">
                                                     <div className="d-flex align-items-center justify-content-between">
-                                                        <span className="fw-semibold text-dark">UPI</span>
-                                                        <img src="https://cdn.iconscout.com/icon/free/png-256/free-upi-2085056-1747946.png" alt="UPI" height="24" />
+                                                        <span className="fw-semibold text-dark">Online Payment</span>
+                                                        <img src={assets.razorPay || "https://razorpay.com/assets/razorpay-glyph.svg"} alt="Razorpay" height="24" />
                                                     </div>
-                                                    <small className="text-muted d-block">Google Pay, PhonePe, Paytm</small>
-                                                </div>
-                                            </div>
-
-                                            {paymentMethod === 'UPI' && (
-                                                <div className="mt-3 ps-4 fade-in">
-                                                    <input
-                                                        type="text"
-                                                        className="form-control bg-white"
-                                                        name="upiId"
-                                                        placeholder="Enter UPI ID (e.g. name@oksbi)"
-                                                        required
-                                                    />
-                                                    <div className="form-text text-muted small">A verification request will be sent to your UPI app.</div>
-                                                </div>
-                                            )}
-                                        </label>
-
-                                        {/* Card Option (Disabled visual) */}
-                                        <label className="card p-3 border-light bg-light opacity-50" style={{ cursor: 'not-allowed' }}>
-                                            <div className="d-flex align-items-center">
-                                                <div className="form-check">
-                                                    <input className="form-check-input" type="radio" name="paymentMethod" disabled />
-                                                </div>
-                                                <div className="ms-3 flex-grow-1">
-                                                    <div className="d-flex align-items-center justify-content-between">
-                                                        <span className="fw-semibold text-muted">Credit / Debit Card</span>
-                                                        <div className="d-flex gap-1">
-                                                            <i className="bi bi-credit-card-2-front"></i>
-                                                        </div>
-                                                    </div>
-                                                    <small className="text-muted">Temporarily Unavailable</small>
+                                                    <small className="text-muted d-block">Cards, UPI, NetBanking (via Razorpay)</small>
                                                 </div>
                                             </div>
                                         </label>
