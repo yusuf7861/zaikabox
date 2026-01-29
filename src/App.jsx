@@ -14,6 +14,9 @@ import ErrorBoundary from "./components/ErrorHandling/ErrorBoundary.jsx";
 import Profile from "./pages/Profile/Profile.jsx";
 
 
+import Footer from "./components/Footer.jsx";
+
+
 const App = () => {
   const location = useLocation();
   const isHome = location.pathname === '/';
@@ -36,6 +39,7 @@ const App = () => {
         <Route path={"/register"} element={<Register />} />
         <Route path={"/profile"} element={<Profile />} />
       </Routes>
+      {!isAuthPage && <Footer />}
     </div>
   )
 }

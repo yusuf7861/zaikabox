@@ -145,7 +145,14 @@ export const Cart = () => {
                             {/*    <button className="btn btn-primary">Apply</button>*/}
                             {/*</div>*/}
 
-                            <button className="btn btn-primary w-100 mb-3" onClick={() => navigate('/place-order')}>
+                            <button className="btn btn-primary w-100 mb-3" onClick={() => {
+                                if (useContext(StoreContext).isLoggedIn) {
+                                    navigate('/place-order');
+                                } else {
+                                    // Store intent and redirect to login
+                                    navigate('/login', { state: { from: '/place-order' } });
+                                }
+                            }}>
                                 <i className="bi bi-credit-card"></i> Proceed to Checkout
                             </button>
                             <p className="text-center text-muted small">Secure checkout powered by RazorPay</p>

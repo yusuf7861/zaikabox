@@ -87,8 +87,12 @@ const Login = () => {
         setLoading(false);
         toast.success("Login successful");
 
-        // Navigate to home page or dashboard after successful login
-        navigate('/');
+        // Navigate to intended page or home
+        if (location.state?.from) {
+          navigate(location.state.from);
+        } else {
+          navigate('/');
+        }
       } else if (response.status === 403) {
         setApiError(response.statusText);
       }
@@ -109,14 +113,14 @@ const Login = () => {
     setResetError("");
     try {
       const res = await axios.post(
-        `${backendUrl}/send-reset-otp`,
+        `${backendUrl}/forgot-password`,
         { email: resetEmail },
         { headers: { "Content-Type": "application/json" } }
       );
       if (res.data && res.data.token) {
         setResetToken(res.data.token);
         setResetStep(2);
-        toast.success("OTP sent to your email");
+        toast.success(res.data.message || "OTP sent to your email");
       } else {
         setResetError("Failed to send OTP");
       }
@@ -138,7 +142,8 @@ const Login = () => {
         { otp: resetOtp, token: resetToken },
         { headers: { "Content-Type": "application/json" } }
       );
-      if (res.data && res.data.message?.toLowerCase().includes("success")) {
+      // Backend says "OTP Verified"
+      if (res.data && (res.data.message?.toLowerCase().includes("verified") || res.data.message?.toLowerCase().includes("success"))) {
         setResetStep(3);
         toast.success("OTP verified. Set new password.");
       } else {
@@ -162,7 +167,8 @@ const Login = () => {
         { token: resetToken, password: resetNewPassword },
         { headers: { "Content-Type": "application/json" } }
       );
-      if (res.data && res.data.message?.toLowerCase().includes("success")) {
+      // Backend says "Password reset successfully"
+      if (res.data && (res.data.message?.toLowerCase().includes("successfully") || res.data.message?.toLowerCase().includes("success"))) {
         toast.success("Password reset successfully. Please login.");
         setShowReset(false);
         setResetStep(1);
@@ -187,13 +193,13 @@ const Login = () => {
     <div className="position-fixed top-0 start-0 w-100 h-100 d-flex align-items-center justify-content-center fade-in"
       style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(5px)", zIndex: 1050 }}>
       <div className="card border-0 shadow-lg rounded-4 overflow-hidden"
-        style={{ maxWidth: "450px", width: "90%", animation: "slideUp 0.3s ease-out" }}>
+        style={{ maxWidth: "400px", width: "95%", animation: "slideUp 0.3s ease-out" }}>
 
-        <div className="card-header bg-white border-0 p-4 d-flex justify-content-between align-items-center">
-          <h5 className="mb-0 fw-bold text-secondary">Reset Password</h5>
+        <div className="card-header bg-white border-0 p-3 d-flex justify-content-between align-items-center">
+          <h6 className="mb-0 fw-bold text-secondary">Reset Password</h6>
           <button
             type="button"
-            className="btn-close"
+            className="btn-close small"
             aria-label="Close"
             onClick={() => {
               setShowReset(false);
@@ -210,42 +216,43 @@ const Login = () => {
         <div className="card-body p-4 pt-0">
           {/* Step Indicators */}
           <div className="d-flex justify-content-center mb-4">
-            <div className={`rounded-circle d-flex align-items-center justify-content-center fw-bold small ${resetStep >= 1 ? 'bg-primary text-white' : 'bg-light text-muted'}`} style={{ width: '32px', height: '32px' }}>1</div>
-            <div className="bg-light mx-2 align-self-center rounded-pill" style={{ width: '40px', height: '4px' }}>
+            <div className={`rounded-circle d-flex align-items-center justify-content-center fw-bold small ${resetStep >= 1 ? 'bg-primary text-white' : 'bg-light text-muted'}`} style={{ width: '28px', height: '28px', fontSize: '0.75rem' }}>1</div>
+            <div className="bg-light mx-2 align-self-center rounded-pill" style={{ width: '30px', height: '3px' }}>
               <div className="bg-primary h-100 rounded-pill" style={{ width: resetStep >= 2 ? '100%' : '0%', transition: 'all 0.3s' }}></div>
             </div>
-            <div className={`rounded-circle d-flex align-items-center justify-content-center fw-bold small ${resetStep >= 2 ? 'bg-primary text-white' : 'bg-light text-muted'}`} style={{ width: '32px', height: '32px' }}>2</div>
-            <div className="bg-light mx-2 align-self-center rounded-pill" style={{ width: '40px', height: '4px' }}>
+            <div className={`rounded-circle d-flex align-items-center justify-content-center fw-bold small ${resetStep >= 2 ? 'bg-primary text-white' : 'bg-light text-muted'}`} style={{ width: '28px', height: '28px', fontSize: '0.75rem' }}>2</div>
+            <div className="bg-light mx-2 align-self-center rounded-pill" style={{ width: '30px', height: '3px' }}>
               <div className="bg-primary h-100 rounded-pill" style={{ width: resetStep >= 3 ? '100%' : '0%', transition: 'all 0.3s' }}></div>
             </div>
-            <div className={`rounded-circle d-flex align-items-center justify-content-center fw-bold small ${resetStep >= 3 ? 'bg-primary text-white' : 'bg-light text-muted'}`} style={{ width: '32px', height: '32px' }}>3</div>
+            <div className={`rounded-circle d-flex align-items-center justify-content-center fw-bold small ${resetStep >= 3 ? 'bg-primary text-white' : 'bg-light text-muted'}`} style={{ width: '28px', height: '28px', fontSize: '0.75rem' }}>3</div>
           </div>
 
           {resetError && (
-            <div className="alert alert-danger shadow-sm py-2 small" role="alert">
+            <div className="alert alert-danger shadow-sm py-2 small mb-3" role="alert">
               <i className="bi bi-exclamation-circle-fill me-2"></i>{resetError}
             </div>
           )}
 
           {resetStep === 1 && (
             <form onSubmit={handleResetEmailSubmit} className="fade-in">
-              <p className="text-muted small mb-4 text-center">Enter your email address to receive a One-Time Password (OTP).</p>
-              <div className="mb-4">
-                <label htmlFor="resetEmail" className="form-label text-muted small fw-bold">EMAIL ADDRESS</label>
-                <div className="input-group">
+              <p className="text-muted small mb-3 text-center">Enter your email address to receive a One-Time Password (OTP).</p>
+              <div className="mb-3">
+                <label htmlFor="resetEmail" className="form-label text-muted small fw-bold mb-1" style={{ fontSize: '0.75rem' }}>EMAIL ADDRESS</label>
+                <div className="input-group input-group-sm">
                   <span className="input-group-text bg-light border-end-0 text-muted"><i className="bi bi-envelope"></i></span>
                   <input
                     type="email"
                     id="resetEmail"
-                    className="form-control form-control-lg bg-light border-start-0 ps-0"
+                    className="form-control bg-light border-start-0 ps-0"
                     placeholder="name@example.com"
+                    style={{ fontSize: '0.9rem' }}
                     required
                     value={resetEmail}
                     onChange={e => setResetEmail(e.target.value)}
                   />
                 </div>
               </div>
-              <button type="submit" className="btn btn-primary w-100 btn-lg rounded-pill" disabled={resetLoading}>
+              <button type="submit" className="btn btn-primary w-100 rounded-pill shadow-sm" disabled={resetLoading} style={{ fontSize: '0.9rem', padding: '8px' }}>
                 {resetLoading ? "Sending Code..." : "Send Verification Code"}
               </button>
             </form>
@@ -253,52 +260,53 @@ const Login = () => {
 
           {resetStep === 2 && (
             <form onSubmit={handleResetOtpSubmit} className="fade-in">
-              <p className="text-muted small mb-4 text-center">We sent a code to <span className="fw-bold text-dark">{resetEmail}</span></p>
-              <div className="mb-4">
-                <label htmlFor="resetOtp" className="form-label text-muted small fw-bold">ENTER OTP</label>
-                <div className="input-group">
+              <p className="text-muted small mb-3 text-center">We sent a code to <span className="fw-bold text-dark">{resetEmail}</span></p>
+              <div className="mb-3">
+                <label htmlFor="resetOtp" className="form-label text-muted small fw-bold mb-1" style={{ fontSize: '0.75rem' }}>ENTER OTP</label>
+                <div className="input-group input-group-sm">
                   <span className="input-group-text bg-light border-end-0 text-muted"><i className="bi bi-123"></i></span>
                   <input
                     type="text"
                     id="resetOtp"
-                    className="form-control form-control-lg bg-light border-start-0 ps-0 letter-spacing-2"
+                    className="form-control bg-light border-start-0 ps-0"
                     placeholder="Enter 6-digit code"
                     required
                     value={resetOtp}
                     onChange={e => setResetOtp(e.target.value)}
-                    style={{ letterSpacing: '0.2em', fontWeight: 'bold' }}
+                    style={{ fontSize: '0.9rem', letterSpacing: '0.3em', fontWeight: 'bold' }}
                     maxLength={6}
                   />
                 </div>
               </div>
-              <button type="submit" className="btn btn-primary w-100 btn-lg rounded-pill" disabled={resetLoading}>
+              <button type="submit" className="btn btn-primary w-100 rounded-pill shadow-sm" disabled={resetLoading} style={{ fontSize: '0.9rem', padding: '8px' }}>
                 {resetLoading ? "Verifying..." : "Verify & Continue"}
               </button>
-              <div className="text-center mt-3">
-                <button type="button" className="btn btn-link text-muted btn-sm text-decoration-none" onClick={() => setResetStep(1)}>Wrong email?</button>
+              <div className="text-center mt-2">
+                <button type="button" className="btn btn-link text-muted btn-sm text-decoration-none" style={{ fontSize: '0.8rem' }} onClick={() => setResetStep(1)}>Wrong email?</button>
               </div>
             </form>
           )}
 
           {resetStep === 3 && (
             <form onSubmit={handleResetPasswordSubmit} className="fade-in">
-              <p className="text-muted small mb-4 text-center">Create a new strong password for your account.</p>
-              <div className="mb-4">
-                <label htmlFor="resetNewPassword" className="form-label text-muted small fw-bold">NEW PASSWORD</label>
-                <div className="input-group">
+              <p className="text-muted small mb-3 text-center">Create a new strong password for your account.</p>
+              <div className="mb-3">
+                <label htmlFor="resetNewPassword" className="form-label text-muted small fw-bold mb-1" style={{ fontSize: '0.75rem' }}>NEW PASSWORD</label>
+                <div className="input-group input-group-sm">
                   <span className="input-group-text bg-light border-end-0 text-muted"><i className="bi bi-lock"></i></span>
                   <input
                     type="password"
                     id="resetNewPassword"
-                    className="form-control form-control-lg bg-light border-start-0 ps-0"
+                    className="form-control bg-light border-start-0 ps-0"
                     placeholder="Enter new password"
+                    style={{ fontSize: '0.9rem' }}
                     required
                     value={resetNewPassword}
                     onChange={e => setResetNewPassword(e.target.value)}
                   />
                 </div>
               </div>
-              <button type="submit" className="btn btn-primary w-100 btn-lg rounded-pill" disabled={resetLoading}>
+              <button type="submit" className="btn btn-primary w-100 rounded-pill shadow-sm" disabled={resetLoading} style={{ fontSize: '0.9rem', padding: '8px' }}>
                 {resetLoading ? "Updating..." : "Reset Password"}
               </button>
             </form>
