@@ -22,7 +22,7 @@ const PlaceOrder = () => {
         country: '', state: ''
     });
 
-    const { foodList, quantities, clearCartItems, userId, initiatePayment, verifyPayment } = useContext(StoreContext);
+    const { foodList, quantities, clearLocalCart, userId, initiatePayment, verifyPayment } = useContext(StoreContext);
     // cart items
     const cartItems = foodList.filter(food => quantities[food.id] > 0);
 
@@ -135,7 +135,6 @@ const PlaceOrder = () => {
 
                         if (verifyResult && (
                             verifyResult.success === true ||
-                            verifyResult.paymentStatus === "COMPLETED" ||
                             verifyResult.status === "COMPLETED" ||
                             verifyResult.status === "PAID" ||
                             verifyResult.orderStatus === "PAID" ||
@@ -150,7 +149,9 @@ const PlaceOrder = () => {
                                 console.warn("Could not fetch bill text, proceeding anyway:", billError);
                             }
 
-                            await clearCartItems();
+                            // Use clearLocalCart because backend already clears the DB cart on secure verification
+                            clearLocalCart();
+
                             // Navigate will unmount component, so state update warning might occur if not handled, but here fine.
                             navigate('/orders', { state: { orderId: finalOrderId, billText: text, showReceipt: true } });
                             toast.success("Order placed successfully!");

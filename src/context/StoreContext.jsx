@@ -267,11 +267,19 @@ export const StoreContextProvider = (props) => {
         }
     };
 
+    // Clear local cart state only (used when backend has already cleared the cart)
+    const clearLocalCart = () => {
+        setQuantities({});
+        localStorage.removeItem("cart");
+    };
+
     const contextValue = {
         foodList,
         addQuantity,
+        addQuantity,
         removeQuantity,
         clearCartItems,
+        clearLocalCart,
         quantities,
         cartId,
         userId,
