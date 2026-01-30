@@ -67,15 +67,11 @@ const PlaceOrder = () => {
 
         try {
 
-            // 1. Initiate Payment
+            // 1. Initiate Payment (Secure Backend-Driven)
+            // We only send the intent and billing details. Backend calculates amount.
             const orderData = {
                 userId: userId,
-                items: cartItems.map(item => ({
-                    foodId: item.id,
-                    name: item.name,
-                    quantity: quantities[item.id],
-                    price: item.price
-                })),
+                // items: [], // Backend uses cart items when useCart is true
                 billingDetails: {
                     firstName: billingValues.firstName || form.firstName.value,
                     lastName: billingValues.lastName || form.lastName.value,
@@ -88,15 +84,14 @@ const PlaceOrder = () => {
                     state: billingValues.state || form.state.value
                 },
                 paymentMode: "RAZORPAY",
-                useCart: true,
-                amount: total,
-                currency: "INR"
+                useCart: true
             };
 
             const orderResponse = await initiatePayment(orderData);
 
-            if (!orderResponse || !orderResponse.orderId) {
-                throw new Error("Failed to initiate payment");
+            if (!orderResponse || !orderResponse.orderId || !orderResponse.razorpayOrderId) {
+                console.error("Invalid Order Response:", orderResponse);
+                throw new Error("Failed to initiate payment. Invalid server response.");
             }
 
             // 2. Open Razorpay Options
@@ -107,10 +102,17 @@ const PlaceOrder = () => {
                 return;
             }
 
+            // Backend returns totalAmountWithGST in Rupees. Razorpay expects paise.
+            // If totalAmountWithGST is missing, we must fail secure (don't fallback to frontend total).
+            if (typeof orderResponse.totalAmountWithGST !== 'number') {
+                throw new Error("Invalid payment amount received from server.");
+            }
+            const razorpayAmount = Math.round(orderResponse.totalAmountWithGST * 100);
+
             const options = {
                 key: keyId,
-                amount: orderResponse.amount,
-                currency: orderResponse.currency,
+                amount: razorpayAmount,
+                currency: "INR",
                 name: "ZaikaBox",
                 description: "Order Payment",
                 image: assets.logo,
