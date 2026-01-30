@@ -13,6 +13,7 @@ const PlaceOrder = () => {
     const [validated, setValidated] = useState(false);
     const [orderError, setOrderError] = useState(null);
     const [paymentMethod, setPaymentMethod] = useState("UPI");
+    const [paymentProcessing, setPaymentProcessing] = useState(false); // New state for full screen loader
 
     // Add state for billing details to support autofill
     const [billingValues, setBillingValues] = useState({
@@ -47,7 +48,6 @@ const PlaceOrder = () => {
             }, function (error) {
                 console.error("Error getting location:", error);
             });
-        } else {
         }
     };
 
@@ -62,6 +62,8 @@ const PlaceOrder = () => {
         }
 
         setValidated(true);
+        setPaymentProcessing(true); // Start full screen loader
+        setOrderError(null);
 
         try {
 
@@ -86,8 +88,8 @@ const PlaceOrder = () => {
                     state: billingValues.state || form.state.value
                 },
                 paymentMode: "RAZORPAY",
-                useCart: true, // Backend requires this explicitly
-                amount: total, // Passing total for reference, though backend likely calculates it
+                useCart: true,
+                amount: total,
                 currency: "INR"
             };
 
@@ -101,7 +103,7 @@ const PlaceOrder = () => {
             const keyId = orderResponse.keyId || import.meta.env.VITE_RAZORPAY_KEY_ID;
             if (!keyId) {
                 toast.error("Payment Configuration Error: Key ID missing.");
-                console.error("Razorpay Key ID missing from backend response and .env");
+                setPaymentProcessing(false);
                 return;
             }
 
@@ -111,9 +113,11 @@ const PlaceOrder = () => {
                 currency: orderResponse.currency,
                 name: "ZaikaBox",
                 description: "Order Payment",
-                image: assets.logo, // Ensure logo is available or use a URL
+                image: assets.logo,
                 order_id: orderResponse.razorpayOrderId,
                 handler: async function (response) {
+                    // Keep loader active or re-activate if needed during verification
+                    setPaymentProcessing(true);
                     try {
                         console.log("Razorpay SDK Success Response:", response);
 
@@ -124,28 +128,19 @@ const PlaceOrder = () => {
                             orderId: orderResponse.orderId
                         };
 
-                        console.log("Sending Verification Payload:", verifyPayload);
-
                         // 3. Verify Payment
                         const verifyResult = await verifyPayment(verifyPayload);
 
-                        console.log("Backend Verification Result:", verifyResult);
-
-                        // Broaden success check to catch any positive indicator
                         if (verifyResult && (
                             verifyResult.success === true ||
                             verifyResult.paymentStatus === "COMPLETED" ||
                             verifyResult.status === "COMPLETED" ||
-                            verifyResult.status === "PAID" ||         // Added PAID check
-                            verifyResult.orderStatus === "PAID" ||    // Added PAID check
-                            verifyResult.orderStatus === "PENDING" || // Some backends might return Order object in PENDING state but verified
-                            verifyResult.razorpayPaymentId // If we get the payment ID back, it's likely a success object
+                            verifyResult.status === "PAID" ||
+                            verifyResult.orderStatus === "PAID" ||
+                            verifyResult.orderStatus === "PENDING" ||
+                            verifyResult.razorpayPaymentId
                         )) {
-
-                            console.log("Verification Successful. Redirecting...");
                             const finalOrderId = verifyResult.orderId || orderResponse.orderId;
-
-                            // Try to get bill text, but don't block redirection if it fails
                             let text = "";
                             try {
                                 text = await getOrderBillText(finalOrderId);
@@ -154,23 +149,29 @@ const PlaceOrder = () => {
                             }
 
                             await clearCartItems();
+                            // Navigate will unmount component, so state update warning might occur if not handled, but here fine.
                             navigate('/orders', { state: { orderId: finalOrderId, billText: text, showReceipt: true } });
                             toast.success("Order placed successfully!");
                         } else {
                             console.error("Verification Condition Failed. verifyResult:", verifyResult);
                             toast.error("Payment verification status unknown. Please check your Orders.");
-                            // Optional: Redirect to orders anyway so they can see if it worked?
-                            // navigate('/orders');
+                            setPaymentProcessing(false);
                         }
                     } catch (err) {
                         console.error("Verification error in handler:", err);
                         toast.error("Payment verification failed: " + (err.response?.data?.message || err.message));
+                        setPaymentProcessing(false);
+                    }
+                },
+                modal: {
+                    ondismiss: function () {
+                        setPaymentProcessing(false); // Disable loader if user closes modal
                     }
                 },
                 prefill: {
                     name: `${billingValues.firstName} ${billingValues.lastName}`,
                     email: billingValues.email,
-                    contact: "" // Add phone to billingValues if needed
+                    contact: ""
                 },
                 theme: {
                     color: "#tomato"
@@ -180,14 +181,34 @@ const PlaceOrder = () => {
             const rzp1 = new window.Razorpay(options);
             rzp1.on('payment.failed', function (response) {
                 toast.error("Payment Failed: " + response.error.description);
+                setPaymentProcessing(false);
             });
             rzp1.open();
+            // Note: We do NOT setPaymentProcessing(false) here immediately.
+            // We want the loader to persist until the modal visually opens. 
+            // However, Razorpay SDK doesn't have an 'opened' event.
+            // Standard practice: Keep it loading, or use a timeout to remove it if you just want to cover initialization.
+            // Since ondismiss handles user closing, and handler handles success, we can leave it true.
 
         } catch (error) {
             console.error("Error placing order:", error);
             setOrderError("Failed to initiate payment. Please try again.");
+            setPaymentProcessing(false);
         }
     };
+
+    if (paymentProcessing) {
+        return (
+            <div className="d-flex flex-column justify-content-center align-items-center position-fixed top-0 start-0 w-100 h-100 bg-white" style={{ zIndex: 9999, opacity: 0.95 }}>
+                <div className="spinner-grow text-primary mb-3" role="status" style={{ width: '3rem', height: '3rem' }}>
+                    <span className="visually-hidden">Loading...</span>
+                </div>
+                <h4 className="text-secondary fw-bold">Securely contacting Razorpay...</h4>
+                <p className="text-muted small">Please do not refresh the page or go back.</p>
+                <img src={assets.razorPay} alt="Razorpay" height="24" className="mt-4" style={{ opacity: 0.8 }} />
+            </div>
+        );
+    }
 
     return (
         <div id="checkout-form" className="py-5 bg-light min-vh-100" style={{ paddingTop: '100px' }}>

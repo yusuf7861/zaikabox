@@ -7,7 +7,7 @@ export const Cart = () => {
 
     const navigate = useNavigate()
 
-    const { foodList, addQuantity, removeQuantity, quantities } = useContext(StoreContext);
+    const { foodList, addQuantity, removeQuantity, quantities, isLoggedIn } = useContext(StoreContext);
     // cart items
     const cartItems = foodList.filter(food => quantities[food.id] > 0);
 
@@ -146,7 +146,7 @@ export const Cart = () => {
                             {/*</div>*/}
 
                             <button className="btn btn-primary w-100 mb-3" onClick={() => {
-                                if (useContext(StoreContext).isLoggedIn) {
+                                if (isLoggedIn) {
                                     navigate('/place-order');
                                 } else {
                                     // Store intent and redirect to login
