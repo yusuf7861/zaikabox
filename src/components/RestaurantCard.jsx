@@ -1,55 +1,44 @@
 import React from 'react';
 
 const RestaurantCard = ({
-                            name,
-                            image,
-                            rating,
-                            cuisine,
-                            deliveryFee,
-                            estimatedTime
-                        }) => {
+    name,
+    image,
+    rating,
+    cuisine,
+    deliveryFee,
+    estimatedTime
+}) => {
     return (
-        <div className="card border-0 h-100">
-            <a href="#" className="text-decoration-none text-dark">
-                <div className="position-relative">
-                    <img
-                        src={image}
-                        alt={name}
-                        className="card-img-top object-fit-cover"
-                        style={{ height: '200px' }}
-                    />
-                    <span className="position-absolute top-0 end-0 mt-3 me-3 badge bg-white text-primary fw-normal py-2 px-3">
-            {estimatedTime}
-          </span>
-                </div>
-                <div className="card-body">
-                    <div className="d-flex justify-content-between align-items-start">
-                        <h5 className="card-title fw-semibold mb-1">{name}</h5>
-                        <div className="d-flex align-items-center bg-success-subtle px-2 py-1 rounded">
-                            <svg
-                                width="12"
-                                height="12"
-                                viewBox="0 0 24 24"
-                                fill="none"
-                                xmlns="http://www.w3.org/2000/svg"
-                                className="me-1"
-                            >
-                                <path
-                                    d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"
-                                    fill="#FFC107"
-                                    stroke="#FFC107"
-                                    strokeWidth="2"
-                                    strokeLinecap="round"
-                                    strokeLinejoin="round"
-                                />
-                            </svg>
-                            <span className="small fw-medium">{rating}</span>
-                        </div>
+        <div className="card h-100 overflow-hidden border-0 shadow-sm" style={{ cursor: 'pointer' }}>
+            <div className="position-relative">
+                <img
+                    src={image}
+                    alt={name}
+                    className="card-img-top object-fit-cover"
+                    style={{ height: '220px', transition: 'transform 0.5s ease' }}
+                    onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                    onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                />
+                <div className="position-absolute bottom-0 start-0 w-100 p-2" style={{ background: 'linear-gradient(to top, rgba(0,0,0,0.7), transparent)' }}>
+                    <div className="d-flex justify-content-between align-items-end px-2">
+                        <span className="badge bg-white text-dark rounded-pill shadow-sm px-3 py-2 fw-bold">
+                            <i className="bi bi-clock me-1 text-primary"></i>{estimatedTime}
+                        </span>
+                        <span className="badge bg-primary text-white rounded-pill px-2 py-1 dflex align-items-center">
+                            {rating} <i className="bi bi-star-fill ms-1" style={{ fontSize: '0.7em' }}></i>
+                        </span>
                     </div>
-                    <p className="card-text small text-muted mt-1">{cuisine}</p>
-                    <p className="card-text small text-muted mt-2 mb-0">Delivery: {deliveryFee}</p>
                 </div>
-            </a>
+            </div>
+            <div className="card-body p-3">
+                <h5 className="card-title fw-bold text-secondary mb-1">{name}</h5>
+                <p className="text-muted small mb-3">{cuisine}</p>
+
+                <div className="d-flex align-items-center text-muted small border-top pt-3">
+                    <i className="bi bi-bicycle me-2 text-primary fs-5"></i>
+                    <span>{deliveryFee === 'Free' ? <span className="text-success fw-bold">Free Delivery</span> : `Delivery: ${deliveryFee}`}</span>
+                </div>
+            </div>
         </div>
     );
 };

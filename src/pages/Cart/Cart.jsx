@@ -1,24 +1,24 @@
-import React, {useContext} from "react"
-import {StoreContext} from "../../context/StoreContext.jsx";
-import {Link, useNavigate} from "react-router-dom";
-import {calculateCartTotal} from "../../util/cartUtils.js";
+import React, { useContext } from "react"
+import { StoreContext } from "../../context/StoreContext.jsx";
+import { Link, useNavigate } from "react-router-dom";
+import { calculateCartTotal } from "../../util/cartUtils.js";
 
 export const Cart = () => {
 
     const navigate = useNavigate()
 
-    const {foodList, addQuantity, removeQuantity, quantities} = useContext(StoreContext);
+    const { foodList, addQuantity, removeQuantity, quantities, isLoggedIn } = useContext(StoreContext);
     // cart items
     const cartItems = foodList.filter(food => quantities[food.id] > 0);
 
     //calculate total price
-    const {subtotal, shipping, tax, total} = calculateCartTotal(
+    const { subtotal, shipping, tax, total } = calculateCartTotal(
         cartItems, quantities
     );
 
     return (
-        <div id="container">
-            <div className="container bg-white rounded shadow-sm p-4">
+        <div id="container" style={{ paddingTop: '100px' }}>
+            <div className="container bg-white rounded shadow-sm p-3 p-md-4">
                 <h2 className="h4 fw-bold mb-4">Your Shopping Cart</h2>
 
                 <div className="row g-4">
@@ -145,7 +145,14 @@ export const Cart = () => {
                             {/*    <button className="btn btn-primary">Apply</button>*/}
                             {/*</div>*/}
 
-                            <button className="btn btn-primary w-100 mb-3" onClick={() => navigate('/place-order')}>
+                            <button className="btn btn-primary w-100 mb-3" onClick={() => {
+                                if (isLoggedIn) {
+                                    navigate('/place-order');
+                                } else {
+                                    // Store intent and redirect to login
+                                    navigate('/login', { state: { from: '/place-order' } });
+                                }
+                            }}>
                                 <i className="bi bi-credit-card"></i> Proceed to Checkout
                             </button>
                             <p className="text-center text-muted small">Secure checkout powered by RazorPay</p>

@@ -1,13 +1,20 @@
 import { createContext, useEffect, useState } from "react";
 import { fetchFoodList } from "../service/foodService.js";
-import { getCart, addItemToCart, updateCart, removeItemFromCart, clearCart, setLoadingContext } from "../service/cartService.js";
+import { getCart, addItemToCart, updateCart, removeItemFromCart, clearCart, setLoadingContext, getCartItemCount } from "../service/cartService.js";
+import { initiatePayment, verifyPayment, getPaymentStatus, retryPayment } from "../service/paymentService.js";
+import { trackOrder, cancelOrder } from "../service/orderService.js";
 import { useLoading } from "./LoadingContext.jsx";
 
 export const StoreContext = createContext(null);
 
 export const StoreContextProvider = (props) => {
+    // Initialize quantities from localStorage if available
+    const [quantities, setQuantities] = useState(() => {
+        const savedCart = localStorage.getItem("cart");
+        return savedCart ? JSON.parse(savedCart) : {};
+    });
+
     const [foodList, setFoodList] = useState([]);
-    const [quantities, setQuantities] = useState({});
     const [cartId, setCartId] = useState(null);
     const [userId, setUserId] = useState(null);
     const [isLoggedIn, setIsLoggedIn] = useState(false);
@@ -45,6 +52,12 @@ export const StoreContextProvider = (props) => {
         };
     }, []);
 
+    // Save quantities to localStorage whenever they change
+    useEffect(() => {
+        if (!isLoggedIn) {
+            localStorage.setItem("cart", JSON.stringify(quantities));
+        }
+    }, [quantities, isLoggedIn]);
 
     // Fetch the cart from the server
     const fetchCart = async () => {
@@ -59,17 +72,86 @@ export const StoreContextProvider = (props) => {
                 Object.entries(cartData.items || {}).forEach(([foodId, quantity]) => {
                     newQuantities[foodId] = quantity;
                 });
-                setQuantities(newQuantities);
+                // We don't set quantities here directly because we might be in the middle of a merge
+                return newQuantities;
             } catch (error) {
                 console.error("Failed to fetch cart:", error);
+                return {};
             }
-        } else {
-            // If user is not logged in, just use local state
-            // No need to fetch from server
-            setCartId(null);
-            setUserId(null);
         }
+        return {};
     };
+
+    // Load data and handle cart merging on login
+    useEffect(() => {
+        async function loadData() {
+            const data = await fetchFoodList();
+            setFoodList(data);
+
+            if (isLoggedIn) {
+                // User just logged in or page refreshed with token
+                const serverQuantities = await fetchCart();
+
+                // Check if we have a local guest cart to merge
+                const localCart = JSON.parse(localStorage.getItem("cart") || "{}");
+                if (Object.keys(localCart).length > 0) {
+                    console.log("Merging guest cart with server cart...");
+
+                    // Merge logic: Add local quantities to server quantities
+                    const mergedQuantities = { ...serverQuantities };
+                    Object.keys(localCart).forEach(itemId => {
+                        mergedQuantities[itemId] = (mergedQuantities[itemId] || 0) + localCart[itemId];
+                    });
+
+                    // Sync merged cart to server
+                    try {
+                        // We need a userId to updateCart, usually fetched with getCart
+                        // But fetchCart already ran.
+                        // Let's use updateCart service
+                        // We need the structure expected by updateCart. 
+                        // Based on usage in removeQuantity, it expects { userId, items: { id: qty } }
+                        // We might need to fetchCart again to get ID/UserId if not set yet, 
+                        // but setUserId happens in fetchCart.
+
+                        // Optimization: fetchCart set state. 
+                        // BUT we need to be careful about state updates being async.
+                        // So we used the return value of fetchCart.
+
+                        // We might not have userId if fetchCart failed or simple initial load?
+                        // Assuming fetchCart succeeded and returned quantities.
+                        // But we need the userId to call updateCart effectively if the API requires it.
+                        // The service 'updateCart' takes 'cartData'.
+
+                        // Let's rely on the fact we just called fetchCart.
+                        // But we need the cart ID/User ID.
+                        // Let's re-fetch specifically for this transaction or rely on state?
+                        // State might not be updated yet.
+                        const currentCart = await getCart(); // Get fresh details including userId
+
+                        await updateCart({
+                            userId: currentCart.userId,
+                            items: mergedQuantities
+                        });
+
+                        setQuantities(mergedQuantities);
+                        // Clear local cart after successful merge
+                        localStorage.removeItem("cart");
+                        console.log("Cart merged successfully.");
+
+                    } catch (err) {
+                        console.error("Failed to merge cart:", err);
+                        // If merge fails, at least show server cart
+                        setQuantities(serverQuantities);
+                    }
+                } else {
+                    // No local cart, just use server cart
+                    setQuantities(serverQuantities);
+                }
+            }
+        }
+        loadData();
+    }, [isLoggedIn]);
+
 
     // Add an item to the cart
     const addQuantity = async (foodId) => {
@@ -89,11 +171,11 @@ export const StoreContextProvider = (props) => {
             } catch (error) {
                 console.error("Failed to add item to cart:", error);
                 // Fallback to local update if API call fails
-                setQuantities((prev) => ({...prev, [foodId]: (prev[foodId] || 0) + 1}));
+                setQuantities((prev) => ({ ...prev, [foodId]: (prev[foodId] || 0) + 1 }));
             }
         } else {
             // If user is not logged in, just update local state
-            setQuantities((prev) => ({...prev, [foodId]: (prev[foodId] || 0) + 1}));
+            setQuantities((prev) => ({ ...prev, [foodId]: (prev[foodId] || 0) + 1 }));
         }
     };
 
@@ -116,7 +198,7 @@ export const StoreContextProvider = (props) => {
                     console.error("Failed to remove item from cart:", error);
                     // Fallback to local update if API call fails
                     setQuantities((prev) => {
-                        const newQuantities = {...prev};
+                        const newQuantities = { ...prev };
                         delete newQuantities[foodId];
                         return newQuantities;
                     });
@@ -125,6 +207,8 @@ export const StoreContextProvider = (props) => {
                 // Decrease quantity
                 try {
                     // Create updated cart data
+                    // We need userId here. If state is not ready, we might fail.
+                    // But removeQuantity is called by user action, so assume loaded.
                     const cartData = {
                         userId: userId,
                         items: {
@@ -146,19 +230,19 @@ export const StoreContextProvider = (props) => {
                 } catch (error) {
                     console.error("Failed to update cart:", error);
                     // Fallback to local update if API call fails
-                    setQuantities((prev) => ({...prev, [foodId]: prev[foodId] > 0 ? prev[foodId] - 1 : 0}));
+                    setQuantities((prev) => ({ ...prev, [foodId]: prev[foodId] > 0 ? prev[foodId] - 1 : 0 }));
                 }
             }
         } else {
             // If user is not logged in, just update local state
             if (removeCompletely || quantities[foodId] <= 1) {
                 setQuantities((prev) => {
-                    const newQuantities = {...prev};
+                    const newQuantities = { ...prev };
                     delete newQuantities[foodId];
                     return newQuantities;
                 });
             } else {
-                setQuantities((prev) => ({...prev, [foodId]: prev[foodId] > 0 ? prev[foodId] - 1 : 0}));
+                setQuantities((prev) => ({ ...prev, [foodId]: prev[foodId] > 0 ? prev[foodId] - 1 : 0 }));
             }
         }
     };
@@ -179,6 +263,7 @@ export const StoreContextProvider = (props) => {
         } else {
             // If user is not logged in, just clear local state
             setQuantities({});
+            localStorage.removeItem("cart");
         }
     };
 
@@ -190,17 +275,16 @@ export const StoreContextProvider = (props) => {
         quantities,
         cartId,
         userId,
-        isLoggedIn
+        isLoggedIn,
+        // Exporting service functions for use in components
+        initiatePayment,
+        verifyPayment,
+        getPaymentStatus,
+        retryPayment,
+        trackOrder,
+        cancelOrder,
+        getCartItemCount
     };
-
-    useEffect(() => {
-        async function loadData() {
-            const data = await fetchFoodList();
-            setFoodList(data);
-            await fetchCart();
-        }
-        loadData();
-    }, [isLoggedIn]); // Re-run when login state changes
 
     return (
         <StoreContext.Provider value={contextValue}>

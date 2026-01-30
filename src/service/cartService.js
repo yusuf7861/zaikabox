@@ -1,7 +1,9 @@
 import axios from "axios";
 import { setLoadingContext as setFoodLoadingContext } from "./foodService.js";
 
-const API_URL = "https://zaikabox-app-latest.onrender.com/api/v1/carts";
+import { backendUrl } from "../assets/assets.js";
+
+const API_URL = `${backendUrl}/api/v1/carts`;
 
 // This function will be used to get the loading context in a non-React environment
 let loadingContextValue = null;
@@ -44,7 +46,7 @@ export const getCart = withLoading('getCart', async () => {
 // Add an item to the cart
 export const addItemToCart = withLoading('addItemToCart', async (foodId) => {
     try {
-        const response = await axios.post(`${API_URL}/items/${foodId}`, {}, { 
+        const response = await axios.post(`${API_URL}/items/${foodId}`, {}, {
             withCredentials: true,
             headers: {
                 'Content-Type': 'application/json'
@@ -60,7 +62,7 @@ export const addItemToCart = withLoading('addItemToCart', async (foodId) => {
 // Update the entire cart
 export const updateCart = withLoading('updateCart', async (cartData) => {
     try {
-        const response = await axios.put(API_URL, cartData, { 
+        const response = await axios.put(API_URL, cartData, {
             withCredentials: true,
             headers: {
                 'Content-Type': 'application/json'
@@ -91,6 +93,17 @@ export const clearCart = withLoading('clearCart', async () => {
         return response.data;
     } catch (error) {
         console.log("Failed to clear cart:", error);
+        throw error;
+    }
+});
+
+// Get cart item count
+export const getCartItemCount = withLoading('getCartItemCount', async () => {
+    try {
+        const response = await axios.get(`${API_URL}/count`, { withCredentials: true });
+        return response.data;
+    } catch (error) {
+        console.log("Failed to get cart item count:", error);
         throw error;
     }
 });
