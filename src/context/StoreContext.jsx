@@ -91,62 +91,10 @@ export const StoreContextProvider = (props) => {
             if (isLoggedIn) {
                 // User just logged in or page refreshed with token
                 const serverQuantities = await fetchCart();
+                setQuantities(serverQuantities);
 
-                // Check if we have a local guest cart to merge
-                const localCart = JSON.parse(localStorage.getItem("cart") || "{}");
-                if (Object.keys(localCart).length > 0) {
-                    console.log("Merging guest cart with server cart...");
-
-                    // Merge logic: Add local quantities to server quantities
-                    const mergedQuantities = { ...serverQuantities };
-                    Object.keys(localCart).forEach(itemId => {
-                        mergedQuantities[itemId] = (mergedQuantities[itemId] || 0) + localCart[itemId];
-                    });
-
-                    // Sync merged cart to server
-                    try {
-                        // We need a userId to updateCart, usually fetched with getCart
-                        // But fetchCart already ran.
-                        // Let's use updateCart service
-                        // We need the structure expected by updateCart. 
-                        // Based on usage in removeQuantity, it expects { userId, items: { id: qty } }
-                        // We might need to fetchCart again to get ID/UserId if not set yet, 
-                        // but setUserId happens in fetchCart.
-
-                        // Optimization: fetchCart set state. 
-                        // BUT we need to be careful about state updates being async.
-                        // So we used the return value of fetchCart.
-
-                        // We might not have userId if fetchCart failed or simple initial load?
-                        // Assuming fetchCart succeeded and returned quantities.
-                        // But we need the userId to call updateCart effectively if the API requires it.
-                        // The service 'updateCart' takes 'cartData'.
-
-                        // Let's rely on the fact we just called fetchCart.
-                        // But we need the cart ID/User ID.
-                        // Let's re-fetch specifically for this transaction or rely on state?
-                        // State might not be updated yet.
-                        const currentCart = await getCart(); // Get fresh details including userId
-
-                        await updateCart({
-                            userId: currentCart.userId,
-                            items: mergedQuantities
-                        });
-
-                        setQuantities(mergedQuantities);
-                        // Clear local cart after successful merge
-                        localStorage.removeItem("cart");
-                        console.log("Cart merged successfully.");
-
-                    } catch (err) {
-                        console.error("Failed to merge cart:", err);
-                        // If merge fails, at least show server cart
-                        setQuantities(serverQuantities);
-                    }
-                } else {
-                    // No local cart, just use server cart
-                    setQuantities(serverQuantities);
-                }
+                // Clear any local guest cart to avoid confusion
+                localStorage.removeItem("cart");
             }
         }
         loadData();
@@ -267,11 +215,19 @@ export const StoreContextProvider = (props) => {
         }
     };
 
+    // Clear local cart state only (used when backend has already cleared the cart)
+    const clearLocalCart = () => {
+        setQuantities({});
+        localStorage.removeItem("cart");
+    };
+
     const contextValue = {
         foodList,
         addQuantity,
+        addQuantity,
         removeQuantity,
         clearCartItems,
+        clearLocalCart,
         quantities,
         cartId,
         userId,
